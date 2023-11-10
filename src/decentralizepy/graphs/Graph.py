@@ -168,3 +168,10 @@ class Graph:
             for j in range(self.averaging_weights.shape[0]):
                 self.averaging_weights[i, j] = self.averaging_weights[i, j] / s
         return self.averaging_weights
+
+    def get_avg_degree(self):
+        sum_degree = 0
+        for node in range(self.n_procs):
+            sum_degree += len(self.neighbors(node))
+
+        return sum_degree / self.n_procs
