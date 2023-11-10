@@ -88,6 +88,8 @@ class TCP(Communication):
         self.router.setsockopt(zmq.IDENTITY, self.identity)
         self.router.setsockopt(zmq.RCVTIMEO, self.recv_timeout)
         self.router.setsockopt(zmq.ROUTER_MANDATORY, 1)
+
+        logging.info(f"Binding to {self.addr(rank, machine_id)}")
         self.router.bind(self.addr(rank, machine_id))
 
         self.total_data = 0
@@ -189,6 +191,7 @@ class TCP(Communication):
             If received HELLO
 
         """
+
         while True:
             try:
                 sender, recv = self.router.recv_multipart()
@@ -223,5 +226,5 @@ class TCP(Communication):
         self.total_bytes += data_size
         id = str(uid).encode()
         self.peer_sockets[id].send(to_send)
-        logging.debug("{} sent the message to {}.".format(self.uid, uid))
+        logging.debug(f"{self.uid} sent the message to {uid}.")
         logging.info("Sent message size: {}".format(data_size))
