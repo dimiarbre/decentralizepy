@@ -39,7 +39,7 @@ class Node:
                 return None
             sender, recv = x
 
-            logging.info(
+            logging.debug(
                 "Received some message from {} with CHANNEL: {}".format(
                     sender, recv["CHANNEL"]
                 )
@@ -54,7 +54,7 @@ class Node:
                     assert not block
                     return None
                 sender, recv = x
-                logging.info(
+                logging.debug(
                     "Received some message from {} with CHANNEL: {}".format(
                         sender, recv["CHANNEL"]
                     )
