@@ -55,7 +55,9 @@ class DPSGDNode(Node):
     #             self.peer_deques[neighbor] = deque()
 
     def receive_DPSGD(self):
-        return self.receive_channel("DPSGD")
+        sender, data = self.receive_channel("DPSGD")
+        logging.info(f"Received Model from {sender} of iteration {data['iteration']}")
+        return sender, data
 
     def run(self):
         """
@@ -101,11 +103,6 @@ class DPSGDNode(Node):
 
             while not self.received_from_all():
                 sender, data = self.receive_DPSGD()
-                logging.info(
-                    "Received Model from {} of iteration {}".format(
-                        sender, data["iteration"]
-                    )
-                )
                 if sender not in self.peer_deques:
                     self.peer_deques[sender] = deque()
                 self.peer_deques[sender].append(data)
