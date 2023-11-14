@@ -37,14 +37,17 @@ class SharingAsymmetric(Sharing):
             weight_total = 0
             for i, n in enumerate(peer_deques):
                 data = peer_deques[n].popleft()
-                degree, iteration = data["degree"], data["iteration"]
+                degree, iteration, averaging_round = (
+                    data["degree"],
+                    data["iteration"],
+                    data["averaging_round"],
+                )
+                del data["averaging_round"]
                 del data["degree"]
                 del data["iteration"]
                 del data["CHANNEL"]
                 logging.debug(
-                    "Averaging model from neighbor {} of iteration {}".format(
-                        n, iteration
-                    )
+                    f"Averaging model from neighbor {n} of iteration {iteration}, averaging round {averaging_round}"
                 )
                 data = self.deserialized_model(data)
                 # Metro-Hastings

@@ -20,10 +20,10 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
 
     def receive_DPSGD(self):
         sender, data = self.receive_channel("DPSGD")
-        logging.debug(data)
         logging.info(
             f"Received Model from {sender} of iteration {data['iteration']} and round {data['averaging_round']}"
         )
+        logging.debug(f"Complete message received: {data}")
         return sender, data
 
     def get_neighbors(self, node=None, averaging_round=0):
