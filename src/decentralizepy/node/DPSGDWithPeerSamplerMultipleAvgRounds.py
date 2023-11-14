@@ -1,8 +1,8 @@
+import json
 import logging
 import math
 import os
 import sys
-import json
 from collections import deque
 
 import torch

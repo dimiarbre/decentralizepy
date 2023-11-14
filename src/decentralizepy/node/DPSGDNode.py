@@ -277,7 +277,7 @@ class DPSGDNode(Node):
         test_after=5,
         train_evaluate_after=1,
         reset_optimizer=1,
-        *args
+        *args,
     ):
         """
         Construct objects.
@@ -371,7 +371,7 @@ class DPSGDNode(Node):
         test_after=5,
         train_evaluate_after=1,
         reset_optimizer=1,
-        *args
+        *args,
     ):
         """
         Constructor
@@ -438,7 +438,7 @@ class DPSGDNode(Node):
             test_after,
             train_evaluate_after,
             reset_optimizer,
-            *args
+            *args,
         )
         logging.info(
             "Each proc uses %d threads out of %d.", self.threads_per_proc, total_threads

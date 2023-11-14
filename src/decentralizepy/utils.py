@@ -86,6 +86,7 @@ def get_args():
     parser.add_argument("-sm", "--server_machine", type=int, default=0)
     parser.add_argument("-sr", "--server_rank", type=int, default=-1)
     parser.add_argument("-wr", "--working_rate", type=float, default=1.0)
+    parser.add_argument("-as", "--averaging_rounds", type=int, default=1)
 
     args = parser.parse_args()
     return args
@@ -118,6 +119,7 @@ def write_args(args, path):
         "train_evaluate_after": args.train_evaluate_after,
         "reset_optimizer": args.reset_optimizer,
         "working_rate": args.working_rate,
+        "averaging_rounds": args.averaging_rounds,
     }
     with open(os.path.join(path, "args.json"), "w") as of:
         json.dump(data, of)

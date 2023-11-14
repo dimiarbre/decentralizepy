@@ -15,7 +15,6 @@ class PeerSamplerMultipleAvgRounds(PeerSampler):
 
     """
 
-
     def init_log(self, log_dir, log_level, force=True):
         """
         Instantiate Logging.
