@@ -26,20 +26,20 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
         logging.debug(f"Complete message received: {data}")
         return sender, data
 
-    def get_neighbors(self, node=None, averaging_round=0):
+    def get_neighbors(self, node=None):
         logging.info("Requesting neighbors from the peer sampler.")
         self.communication.send(
             self.peer_sampler_uid,
             {
                 "REQUEST_NEIGHBORS": self.uid,
                 "iteration": self.iteration,
-                "averaging_round": averaging_round,  # Problem: This increases the size of the data we must send when performing a single averaging round
+                "averaging_round": self.averaging_round,  # Problem: This increases the size of the data we must send when performing a single averaging round
                 "CHANNEL": "SERVER_REQUEST",
             },
         )
         my_neighbors = self.receive_neighbors()
         logging.info(
-            f"Neighbors for iteration {self.iteration} and round {averaging_round}: {my_neighbors}"
+            f"Neighbors for iteration {self.iteration} and round {self.averaging_round}: {my_neighbors}"
         )
         return my_neighbors
 

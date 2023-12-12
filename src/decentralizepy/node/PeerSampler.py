@@ -175,11 +175,18 @@ class PeerSampler(Node):
 
             elif "REQUEST_NEIGHBORS" in data:
                 logging.debug("Received {} from {}".format("Request", sender))
+                logging.debug(f"Complete data: {data}")
                 if "iteration" in data:
-                    resp = {
-                        "NEIGHBORS": self.get_neighbors(sender, data["iteration"]),
-                        "CHANNEL": "PEERS",
-                    }
+                    if "averaging_round" in data:
+                        resp = {
+                            "NEIGHBORS": self.get_neighbors(sender, data["iteration"],data["averaging_round"]),
+                            "CHANNEL": "PEERS",
+                        }
+                    else : 
+                        resp = {
+                            "NEIGHBORS": self.get_neighbors(sender, data["iteration"]),
+                            "CHANNEL": "PEERS",
+                        }
                 else:
                     resp = {"NEIGHBORS": self.get_neighbors(sender), "CHANNEL": "PEERS"}
                 self.communication.send(sender, resp)

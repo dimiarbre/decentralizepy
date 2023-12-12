@@ -56,6 +56,7 @@ class Sharing:
         self.model = model
         self.dataset = dataset
         self.communication_round = 0
+        self.averaging_round = 0
         self.log_dir = log_dir
 
         self.shapes = []
