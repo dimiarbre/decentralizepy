@@ -15,7 +15,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
 
     def get_neighbors(self, node, iteration=None, averaging_round=0):
         # logging.debug(f"Node : {node}, {iteration}, {averaging_round} ")
-        if iteration != None:
+        if iteration is not None:
             if iteration > self.iteration:
                 logging.info(
                     "iteration, self.iteration: {}, {}".format(
@@ -32,7 +32,9 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
                 logging.debug(
                     f"averaging_round, self.averaging_round: {averaging_round}, {self.averaging_round}"
                 )
-                assert averaging_round == self.averaging_round + 1, f"Expected to be averaging round {self.averaging_round + 1}, got {averaging_round}"
+                assert (
+                    averaging_round == self.averaging_round + 1
+                ), f"Expected to be averaging round {self.averaging_round + 1}, got {averaging_round}"
                 self.averaging_round = averaging_round
                 self.graphs[iteration].append(
                     Regular(self.graph.n_procs, self.graph_degree)
@@ -103,7 +105,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         self.graph_degree = graph_degree
 
         self.instantiate(
-            rank = rank,
+            rank=rank,
             machine_id=machine_id,
             mapping=mapping,
             graph=graph,

@@ -108,7 +108,7 @@ class PeerSampler(Node):
         iterations=1,
         log_dir=".",
         log_level=logging.INFO,
-        *args
+        *args,
     ):
         """
         Construct objects.
@@ -178,11 +178,14 @@ class PeerSampler(Node):
                 logging.debug(f"Complete data: {data}")
                 if "iteration" in data:
                     if "averaging_round" in data:
+                        # This will work only with PeerSampleMultipleAvgRound subclasses
                         resp = {
-                            "NEIGHBORS": self.get_neighbors(sender, data["iteration"],data["averaging_round"]),
+                            "NEIGHBORS": self.get_neighbors(
+                                sender, data["iteration"], data["averaging_round"]
+                            ),
                             "CHANNEL": "PEERS",
                         }
-                    else : 
+                    else:
                         resp = {
                             "NEIGHBORS": self.get_neighbors(sender, data["iteration"]),
                             "CHANNEL": "PEERS",
@@ -201,7 +204,7 @@ class PeerSampler(Node):
         iterations=1,
         log_dir=".",
         log_level=logging.INFO,
-        *args
+        *args,
     ):
         """
         Constructor
@@ -249,7 +252,7 @@ class PeerSampler(Node):
             iterations,
             log_dir,
             log_level,
-            *args
+            *args,
         )
 
         self.instantiate(
@@ -261,7 +264,7 @@ class PeerSampler(Node):
             iterations,
             log_dir,
             log_level,
-            *args
+            *args,
         )
 
         self.run()
