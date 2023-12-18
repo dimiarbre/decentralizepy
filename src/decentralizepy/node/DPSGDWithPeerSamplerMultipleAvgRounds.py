@@ -1,11 +1,7 @@
 import json
 import logging
-import math
 import os
-import sys
 from collections import deque
-
-import torch
 
 from decentralizepy.graphs.Graph import Graph
 from decentralizepy.mappings.Mapping import Mapping
@@ -20,10 +16,10 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
 
     def receive_DPSGD(self):
         sender, data = self.receive_channel("DPSGD")
+        logging.debug("Complete message received: %s", data)
         logging.info(
             f"Received Model from {sender} of iteration {data['iteration']} and round {data['averaging_round']}"
         )
-        logging.debug(f"Complete message received: {data}")
         return sender, data
 
     def get_neighbors(self, node=None):
@@ -175,6 +171,8 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
             rounds_to_test -= 1
 
             self.iteration = iteration
+            self.sharing.training_iteration = iteration
+
             self.trainer.train(self.dataset)
 
             # The following code does not work because TCP sockets are supposed to be long lived.

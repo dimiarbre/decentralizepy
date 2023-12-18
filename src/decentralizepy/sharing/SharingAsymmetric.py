@@ -23,7 +23,6 @@ class SharingAsymmetric(Sharing):
         to_send = self.get_data_to_send()
         to_send["CHANNEL"] = "DPSGD"
         to_send["averaging_round"] = averaging_round
-
         for neighbor in neighbors:
             self.communication.send(neighbor, to_send)
 
@@ -51,6 +50,8 @@ class SharingAsymmetric(Sharing):
                 )
                 data = self.deserialized_model(data)
                 # Metro-Hastings
+                # TODO: Generalize this to arbitrary communication matrix?
+                # In this case it should be handled by the PeerSampler.
                 weight = 1 / (max(len(peer_deques), degree) + 1)
                 weight_total += weight
                 for key, value in data.items():
@@ -64,4 +65,39 @@ class SharingAsymmetric(Sharing):
 
         self.model.load_state_dict(total)
         self._post_step()
-        # self.communication_round +=1
+        self.communication_round += 1
+
+    def get_data_to_send(self):
+        data_to_send = super().get_data_to_send()
+        data_to_send["iteration"] = self.training_iteration
+        return data_to_send
+
+    def __init__(
+        self,
+        rank,
+        machine_id,
+        communication,
+        mapping,
+        graph,
+        model,
+        dataset,
+        log_dir,
+        compress=False,
+        compression_package=None,
+        compression_class=None,
+    ):
+        super().__init__(
+            rank,
+            machine_id,
+            communication,
+            mapping,
+            graph,
+            model,
+            dataset,
+            log_dir,
+            compress=compress,
+            compression_package=compression_package,
+            compression_class=compression_class,
+        )
+
+        self.training_iteration = None

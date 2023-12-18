@@ -8,8 +8,12 @@ from torch import multiprocessing as mp
 from decentralizepy import utils
 from decentralizepy.graphs.Graph import Graph
 from decentralizepy.mappings.Linear import Linear
-from decentralizepy.node.DPSGDWithPeerSamplerMultipleAvgRounds import DPSGDWithPeerSamplerMultipleAvgRounds
-from decentralizepy.node.PeerSamplerDynamicMultipleAvgRounds import PeerSamplerDynamicMultipleAvgRounds
+from decentralizepy.node.DPSGDWithPeerSamplerMultipleAvgRounds import (
+    DPSGDWithPeerSamplerMultipleAvgRounds,
+)
+from decentralizepy.node.PeerSamplerDynamicMultipleAvgRounds import (
+    PeerSamplerDynamicMultipleAvgRounds,
+)
 
 
 def read_ini(file_path):

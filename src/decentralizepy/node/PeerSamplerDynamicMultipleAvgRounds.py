@@ -44,6 +44,19 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         else:
             return self.graph.neighbors(node)
 
+    def handle_request_neighors(self,data,sender):
+        if "iteration" in data and "averaging_round" in data:
+            # This will work only with PeerSampleMultipleAvgRound subclasses
+            resp = {
+                "NEIGHBORS": self.get_neighbors(
+                    sender, data["iteration"], data["averaging_round"]
+                ),
+                "CHANNEL": "PEERS",
+            }
+            return resp
+        else:
+            return super().handle_request_neighors(data,sender)
+
     def __init__(
         self,
         rank: int,
