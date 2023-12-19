@@ -49,11 +49,6 @@ class DPSGDNode(Node):
     def get_neighbors(self, node=None):
         return self.my_neighbors
 
-    # def instantiate_peer_deques(self):
-    #     for neighbor in self.my_neighbors:
-    #         if neighbor not in self.peer_deques:
-    #             self.peer_deques[neighbor] = deque()
-
     def receive_DPSGD(self):
         sender, data = self.receive_channel("DPSGD")
         logging.info(f"Received Model from {sender} of iteration {data['iteration']}")
@@ -92,10 +87,9 @@ class DPSGDNode(Node):
 
             self.my_neighbors = new_neighbors
             self.connect_neighbors()
-            logging.info("Connected to all neighbors")
-            # self.instantiate_peer_deques()
+            logging.debug("Connected to all neighbors")
 
-            to_send = self.sharing.get_data_to_send()
+            to_send = self.sharing.get_data_to_send(degree=len(self.my_neighbors))
             to_send["CHANNEL"] = "DPSGD"
 
             for neighbor in self.my_neighbors:
@@ -103,9 +97,18 @@ class DPSGDNode(Node):
 
             while not self.received_from_all():
                 sender, data = self.receive_DPSGD()
+                logging.debug(
+                    "Received Model from {} of iteration {}".format(
+                        sender, data["iteration"]
+                    )
+                )
                 if sender not in self.peer_deques:
                     self.peer_deques[sender] = deque()
-                self.peer_deques[sender].append(data)
+
+                if data["iteration"] == self.iteration:
+                    self.peer_deques[sender].appendleft(data)
+                else:
+                    self.peer_deques[sender].append(data)
 
             averaging_deque = dict()
             for neighbor in self.my_neighbors:
@@ -130,6 +133,8 @@ class DPSGDNode(Node):
                     "train_loss": {},
                     "test_loss": {},
                     "test_acc": {},
+                    "validation_loss": {},
+                    "validation_acc": {},
                     "total_bytes": {},
                     "total_meta": {},
                     "total_data_per_n": {},
@@ -165,6 +170,11 @@ class DPSGDNode(Node):
                 ta, tl = self.dataset.test(self.model, self.loss)
                 results_dict["test_acc"][iteration + 1] = ta
                 results_dict["test_loss"][iteration + 1] = tl
+                if self.dataset.__validating__:
+                    logging.info("Evaluating on the validation set")
+                    va, vl = self.dataset.validate(self.model, self.loss)
+                    results_dict["validation_acc"][iteration + 1] = va
+                    results_dict["validation_loss"][iteration + 1] = vl
 
                 if global_epoch == 49:
                     change *= 2
@@ -241,9 +251,9 @@ class DPSGDNode(Node):
         self.reset_optimizer = reset_optimizer
         self.sent_disconnections = False
 
-        logging.info("Rank: %d", self.rank)
-        logging.info("type(graph): %s", str(type(self.rank)))
-        logging.info("type(mapping): %s", str(type(self.mapping)))
+        logging.debug("Rank: %d", self.rank)
+        logging.debug("type(graph): %s", str(type(self.rank)))
+        logging.debug("type(mapping): %s", str(type(self.mapping)))
 
     def init_comm(self, comm_configs):
         """
@@ -353,7 +363,11 @@ class DPSGDNode(Node):
 
         """
         for k in self.my_neighbors:
-            if (k not in self.peer_deques) or len(self.peer_deques[k]) == 0:
+            if (
+                (k not in self.peer_deques)
+                or len(self.peer_deques[k]) == 0
+                or self.peer_deques[k][0]["iteration"] != self.iteration
+            ):
                 return False
         return True
 
@@ -421,7 +435,7 @@ class DPSGDNode(Node):
 
         total_threads = os.cpu_count()
         self.threads_per_proc = max(
-            math.floor(total_threads / mapping.procs_per_machine), 1
+            math.floor(total_threads / mapping.get_local_procs_count()), 1
         )
         torch.set_num_threads(self.threads_per_proc)
         torch.set_num_interop_threads(1)

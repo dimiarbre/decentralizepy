@@ -47,12 +47,15 @@ if __name__ == "__main__":
     g = Graph()
     g.read_graph_from_file(args.graph_file, args.graph_type)
     n_machines = args.machines
-    procs_per_machine = args.procs_per_machine
-    l = Linear(n_machines, procs_per_machine)
+    procs_per_machine = args.procs_per_machine[0]
     m_id = args.machine_id
 
     sm = args.server_machine
     sr = args.server_rank
+
+    l = Linear(
+        n_machines, procs_per_machine, global_service_machine=sm, current_machine=m_id
+    )
 
     processes = []
     if sm == m_id:

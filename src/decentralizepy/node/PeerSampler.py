@@ -76,9 +76,9 @@ class PeerSampler(Node):
         self.iterations = iterations
         self.sent_disconnections = False
 
-        logging.info("Rank: %d", self.rank)
-        logging.info("type(graph): %s", str(type(self.rank)))
-        logging.info("type(mapping): %s", str(type(self.mapping)))
+        logging.debug("Rank: %d", self.rank)
+        logging.debug("type(graph): %s", str(type(self.rank)))
+        logging.debug("type(mapping): %s", str(type(self.mapping)))
 
     def init_comm(self, comm_configs):
         """
@@ -97,6 +97,23 @@ class PeerSampler(Node):
         self.communication = comm_class(
             self.rank, self.machine_id, self.mapping, self.graph.n_procs, **comm_params
         )
+
+    def init_dataset_model(self, dataset_configs):
+        """
+        Instantiate dataset and model from config.
+
+        Parameters
+        ----------
+        dataset_configs : dict
+            Python dict containing dataset config params
+
+        """
+        dataset_module = importlib.import_module(dataset_configs["dataset_package"])
+        self.dataset_class = getattr(dataset_module, dataset_configs["dataset_class"])
+        random_seed = (
+            dataset_configs["random_seed"] if "random_seed" in dataset_configs else 97
+        )
+        self.random_seed = random_seed
 
     def instantiate(
         self,
@@ -148,6 +165,8 @@ class PeerSampler(Node):
             log_dir,
         )
 
+        self.init_dataset_model(config["DATASET"])
+
         self.message_queue = dict()
 
         self.barrier = set()
@@ -170,7 +189,7 @@ class PeerSampler(Node):
             sender (int): The sender of the request
 
         Returns:
-            dic: The response to 
+            dic: The formatted response to the neighbors request. 
         """
         if "iteration" in data:
             resp = {

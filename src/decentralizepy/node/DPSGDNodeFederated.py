@@ -28,7 +28,7 @@ class DPSGDNodeFederated(Node):
             sender, data = self.receive_channel("WORKER_REQUEST")
 
             if "BYE" in data:
-                logging.info("Received {} from {}".format("BYE", sender))
+                logging.debug("Received {} from {}".format("BYE", sender))
                 self.barrier.remove(sender)
                 break
 
@@ -40,7 +40,7 @@ class DPSGDNodeFederated(Node):
             self.sharing._post_step()
             self.sharing.communication_round += 1
 
-            logging.info(
+            logging.debug(
                 "Received worker request at node {}, global iteration {}, local round {}".format(
                     self.uid, iteration, self.participated
                 )
@@ -59,6 +59,7 @@ class DPSGDNodeFederated(Node):
             # Send update to server
             to_send = self.sharing.get_data_to_send()
             to_send["CHANNEL"] = "DPSGD"
+            to_send["iteration"] = iteration
             self.communication.send(self.parameter_server_uid, to_send)
 
             if self.participated > 0:
@@ -94,11 +95,6 @@ class DPSGDNodeFederated(Node):
                 json.dump(results_dict, of)
 
             self.participated += 1
-
-        # only if has participated in learning
-        if self.participated > 0:
-            logging.info("Storing final weight")
-            self.model.dump_weights(self.weights_store_dir, self.uid, iteration)
 
         logging.info("Server disconnected. Process complete!")
 
@@ -154,9 +150,9 @@ class DPSGDNodeFederated(Node):
         self.reset_optimizer = reset_optimizer
         self.sent_disconnections = False
 
-        logging.info("Rank: %d", self.rank)
-        logging.info("type(graph): %s", str(type(self.rank)))
-        logging.info("type(mapping): %s", str(type(self.mapping)))
+        logging.debug("Rank: %d", self.rank)
+        logging.debug("type(graph): %s", str(type(self.rank)))
+        logging.debug("type(mapping): %s", str(type(self.mapping)))
 
     def init_comm(self, comm_configs):
         """
@@ -254,6 +250,35 @@ class DPSGDNodeFederated(Node):
 
         self.init_sharing(config["SHARING"])
 
+    def init_dataset_model(self, dataset_configs):
+        """
+        Instantiate dataset and model from config.
+
+        Parameters
+        ----------
+        dataset_configs : dict
+            Python dict containing dataset config params
+
+        """
+        dataset_module = importlib.import_module(dataset_configs["dataset_package"])
+        self.dataset_class = getattr(dataset_module, dataset_configs["dataset_class"])
+        random_seed = (
+            dataset_configs["random_seed"] if "random_seed" in dataset_configs else 97
+        )
+        torch.manual_seed(random_seed)
+        self.dataset_params = utils.remove_keys(
+            dataset_configs,
+            ["dataset_package", "dataset_class", "model_class", "test_dir"],
+        )
+        self.dataset = self.dataset_class(
+            self.rank, self.machine_id, self.mapping, **self.dataset_params
+        )
+
+        logging.info("Dataset instantiation complete.")
+
+        self.model_class = getattr(dataset_module, dataset_configs["model_class"])
+        self.model = self.model_class()
+
     def __init__(
         self,
         rank: int,
@@ -321,7 +346,7 @@ class DPSGDNodeFederated(Node):
 
         total_threads = os.cpu_count()
         self.threads_per_proc = max(
-            math.floor(total_threads / mapping.procs_per_machine), 1
+            math.floor(total_threads / mapping.get_local_procs_count()), 1
         )
         torch.set_num_threads(self.threads_per_proc)
         torch.set_num_interop_threads(1)

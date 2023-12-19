@@ -148,7 +148,7 @@ class Training:
                 logging.debug("Classes: {}".format(target))
                 epoch_loss += self.trainstep(data, target)
                 count += 1
-            logging.info("Epoch: {} loss: {}".format(epoch, epoch_loss / count))
+            logging.debug("Epoch: {} loss: {}".format(epoch, epoch_loss / count))
 
     def train(self, dataset):
         """
@@ -160,6 +160,7 @@ class Training:
             The training dataset. Should implement get_trainset(batch_size, shuffle)
 
         """
+        self.model.train()
 
         if self.full_epochs:
             self.train_full(dataset)
@@ -171,6 +172,6 @@ class Training:
                 for data, target in trainset:
                     iter_loss += self.trainstep(data, target)
                     count += 1
-                    logging.info("Round: {} loss: {}".format(count, iter_loss / count))
+                    logging.debug("Round: {} loss: {}".format(count, iter_loss / count))
                     if count >= self.rounds:
                         break

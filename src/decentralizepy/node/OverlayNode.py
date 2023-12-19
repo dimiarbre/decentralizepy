@@ -75,7 +75,7 @@ class OverlayNode(Node):
 
         logging.info("InNodes: {}".format(self.in_edges))
 
-        logging.info("Unifying edges")
+        logging.debug("Unifying edges")
 
         self.out_edges = self.out_edges.union(self.in_edges)
         self.my_neighbors = self.in_edges = set(self.out_edges)
@@ -90,7 +90,7 @@ class OverlayNode(Node):
             self.iteration = iteration
             self.trainer.train(self.dataset)
 
-            to_send = self.sharing.get_data_to_send()
+            to_send = self.sharing.get_data_to_send(degree=len(self.my_neighbors))
             to_send["CHANNEL"] = "DPSGD"
             to_send["degree"] = len(self.in_edges)
 
@@ -102,14 +102,18 @@ class OverlayNode(Node):
 
             while not self.received_from_all():
                 sender, data = self.receive_DPSGD()
-                logging.info(
+                logging.debug(
                     "Received Model from {} of iteration {}".format(
                         sender, data["iteration"]
                     )
                 )
                 if sender not in self.peer_deques:
                     self.peer_deques[sender] = deque()
-                self.peer_deques[sender].append(data)
+
+                if data["iteration"] == self.iteration:
+                    self.peer_deques[sender].appendleft(data)
+                else:
+                    self.peer_deques[sender].append(data)
 
             averaging_deque = dict()
             for neighbor in self.in_edges:
@@ -189,8 +193,8 @@ class OverlayNode(Node):
         #     ) as of:
         #         json.dump(self.model.shared_parameters_counter.numpy().tolist(), of)
         self.disconnect_neighbors()
-        # logging.info("Storing final weight")
-        # self.model.dump_weights(self.weights_store_dir, self.uid, iteration)
+        logging.info("Storing final weight")
+        self.model.dump_weights(self.weights_store_dir, self.uid, iteration)
         logging.info("All neighbors disconnected. Process complete!")
 
     def cache_fields(
@@ -245,9 +249,9 @@ class OverlayNode(Node):
         self.reset_optimizer = reset_optimizer
         self.sent_disconnections = False
 
-        logging.info("Rank: %d", self.rank)
-        logging.info("type(graph): %s", str(type(self.rank)))
-        logging.info("type(mapping): %s", str(type(self.mapping)))
+        logging.debug("Rank: %d", self.rank)
+        logging.debug("type(graph): %s", str(type(self.rank)))
+        logging.debug("type(mapping): %s", str(type(self.mapping)))
 
     def init_comm(self, comm_configs):
         """
@@ -357,7 +361,11 @@ class OverlayNode(Node):
 
         """
         for k in self.in_edges:
-            if (k not in self.peer_deques) or len(self.peer_deques[k]) == 0:
+            if (
+                (k not in self.peer_deques)
+                or len(self.peer_deques[k]) == 0
+                or self.peer_deques[k][0]["iteration"] != self.iteration
+            ):
                 return False
         return True
 

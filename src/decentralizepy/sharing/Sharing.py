@@ -23,6 +23,7 @@ class Sharing:
         compress=False,
         compression_package=None,
         compression_class=None,
+        float_precision=None,
     ):
         """
         Constructor
@@ -72,8 +73,8 @@ class Sharing:
         if compression_package and compression_class:
             compressor_module = importlib.import_module(compression_package)
             compressor_class = getattr(compressor_module, compression_class)
-            self.compressor = compressor_class()
-            logging.info(f"Using the {compressor_class} to compress the data")
+            self.compressor = compressor_class(float_precision=float_precision)
+            logging.debug(f"Using the {compressor_class} to compress the data")
         else:
             assert not self.compress
 
@@ -108,6 +109,7 @@ class Sharing:
         flat = torch.cat(to_cat)
         data = dict()
         data["params"] = flat.numpy()
+        logging.debug("Model sending this round: {}".format(data["params"]))
         return self.compress_data(data)
 
     def deserialized_model(self, m):
@@ -188,12 +190,11 @@ class Sharing:
         self._post_step()
         self.communication_round += 1
 
-    def get_data_to_send(self):
+    def get_data_to_send(self, degree=None):
         self._pre_step()
         data = self.serialized_model()
         my_uid = self.mapping.get_uid(self.rank, self.machine_id)
-        all_neighbors = self.graph.neighbors(my_uid)
-        data["degree"] = len(all_neighbors)
+        data["degree"] = degree if degree != None else len(self.graph.neighbors(my_uid))
         data["iteration"] = self.communication_round
         return data
 

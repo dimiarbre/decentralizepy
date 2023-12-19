@@ -14,10 +14,14 @@ class Dataset:
         rank: int,
         machine_id: int,
         mapping: Mapping,
+        random_seed: int = 1234,
+        only_local=False,
         train_dir="",
         test_dir="",
         sizes="",
         test_batch_size="",
+        validation_source="",
+        validation_size="",
     ):
         """
         Constructor which reads the data files, instantiates and partitions the dataset
@@ -31,6 +35,10 @@ class Dataset:
         mapping : decentralizepy.mappings.Mapping
             Mapping to convert rank, machine_id -> uid for data partitioning
             It also provides the total number of global processes
+        random_seed : int, optional
+            Random seed for the dataset
+        only_local : bool, optional
+            True if the dataset needs to be partioned only among local procs, False otherwise
         train_dir : str, optional
             Path to the training data files. Required to instantiate the training set
             The training set is partitioned according to the number of global processes and sizes
@@ -41,18 +49,31 @@ class Dataset:
             By default, each process gets an equal amount.
         test_batch_size : int, optional
             Batch size during testing. Default value is 64
-
+        validation_source : str, optional
+            Source of the validation set. Can be one of 'train' or 'test'
+        validation_size : int, optional
+            size of the test set used as validation set
         """
         self.rank = rank
         self.machine_id = machine_id
         self.mapping = mapping
-        # the number of global processes, needed to split-up the dataset
-        self.n_procs = mapping.get_n_procs()
+        self.random_seed = random_seed
+        self.uid = self.mapping.get_uid(rank, machine_id)
+        self.only_local = only_local
+        self.dataset_id = self.rank if self.only_local else self.uid
+        self.num_partitions = (
+            self.mapping.get_local_procs_count()
+            if self.only_local
+            else self.mapping.get_n_procs()
+        )
         self.train_dir = utils.conditional_value(train_dir, "", None)
         self.test_dir = utils.conditional_value(test_dir, "", None)
         self.sizes = utils.conditional_value(sizes, "", None)
         self.test_batch_size = utils.conditional_value(test_batch_size, "", 64)
         self.num_classes = None
+        self.validation_size = utils.conditional_value(validation_size, "", None)
+        self.validation_source = utils.conditional_value(validation_source, "", None)
+
         if self.sizes:
             if type(self.sizes) == str:
                 self.sizes = eval(self.sizes)
@@ -66,6 +87,11 @@ class Dataset:
             self.__testing__ = True
         else:
             self.__testing__ = False
+
+        if self.validation_size and self.validation_source:
+            self.__validating__ = True
+        else:
+            self.__validating__ = False
 
         self.label_distribution = None
 
@@ -98,6 +124,22 @@ class Dataset:
         raise NotImplementedError
 
     def get_testset(self):
+        """
+        Function to get the test set
+
+        Returns
+        -------
+        torch.utils.Dataset(decentralizepy.datasets.Data)
+
+        Raises
+        ------
+        RuntimeError
+            If the test set was not initialized
+
+        """
+        raise NotImplementedError
+
+    def get_validationset(self):
         """
         Function to get the test set
 

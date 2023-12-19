@@ -1,7 +1,9 @@
 import json
 import logging
 import pickle
+import socket
 from collections import deque
+from time import sleep
 
 import zmq
 
@@ -34,7 +36,7 @@ class TCP(Communication):
             Full address of the process using TCP
 
         """
-        machine_addr = self.ip_addrs[str(machine_id)]
+        machine_addr = socket.gethostbyname(self.ip_addrs[str(machine_id)])
         port = (2 * rank + 1) + self.offset
         assert port > 0
         return "tcp://{}:{}".format(machine_addr, port)
@@ -97,6 +99,8 @@ class TCP(Communication):
 
         self.peer_deque = deque()
         self.peer_sockets = dict()
+
+        # sleep(2) # Sleep for socket creation everywhere
 
     def __del__(self):
         """
@@ -218,6 +222,7 @@ class TCP(Communication):
             Message as a Python dictionary
 
         """
+
         if encrypt:
             to_send = self.encrypt(data)
         else:
@@ -226,5 +231,5 @@ class TCP(Communication):
         self.total_bytes += data_size
         id = str(uid).encode()
         self.peer_sockets[id].send(to_send)
-        logging.debug(f"{self.uid} sent the message to {uid}.")
-        logging.info("Sent message size: {}".format(data_size))
+        logging.debug("{} sent the message to {}.".format(self.uid, uid))
+        logging.debug("Sent message size: {}".format(data_size))

@@ -20,7 +20,7 @@ class DPSGDWithPeerSampler(DPSGDNode):
         return self.receive_channel("PEERS")[1]["NEIGHBORS"]
 
     def get_neighbors(self, node=None):
-        logging.info("Requesting neighbors from the peer sampler.")
+        logging.debug("Requesting neighbors from the peer sampler.")
         self.communication.send(
             self.peer_sampler_uid,
             {
@@ -30,7 +30,7 @@ class DPSGDWithPeerSampler(DPSGDNode):
             },
         )
         my_neighbors = self.receive_neighbors()
-        logging.info("Neighbors this round: {}".format(my_neighbors))
+        logging.debug("Neighbors this round: {}".format(my_neighbors))
         return my_neighbors
 
     def __init__(
@@ -98,7 +98,7 @@ class DPSGDWithPeerSampler(DPSGDNode):
 
         total_threads = os.cpu_count()
         self.threads_per_proc = max(
-            math.floor(total_threads / mapping.procs_per_machine), 1
+            math.floor(total_threads / mapping.get_local_procs_count()), 1
         )
         torch.set_num_threads(self.threads_per_proc)
         torch.set_num_interop_threads(1)
@@ -141,14 +141,17 @@ class DPSGDWithPeerSampler(DPSGDNode):
         """
         if not self.sent_disconnections:
             logging.info("Disconnecting neighbors")
+
+            if self.peer_sampler_uid in self.barrier:
+                self.communication.send(
+                    self.peer_sampler_uid,
+                    {"BYE": self.uid, "CHANNEL": "SERVER_REQUEST"},
+                )
+                self.barrier.remove(self.peer_sampler_uid)
+
             for uid in self.barrier:
                 self.communication.send(uid, {"BYE": self.uid, "CHANNEL": "DISCONNECT"})
-            self.communication.send(
-                self.peer_sampler_uid, {"BYE": self.uid, "CHANNEL": "SERVER_REQUEST"}
-            )
             self.sent_disconnections = True
-
-            self.barrier.remove(self.peer_sampler_uid)
 
             while len(self.barrier):
                 sender, _ = self.receive_disconnect()

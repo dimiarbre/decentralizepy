@@ -1,24 +1,25 @@
 #!/bin/bash
 
-decpy_path=/mnt/nfs/risharma/Gitlab/decentralizepy/eval
-cd $decpy_path
+decpy_path=../eval # Path to eval folder
+graph=regular_16.txt # Absolute path of the graph file generated using the generate_graph.py script
+run_path=../eval/data # Path to the folder where the graph and config file will be copied and the results will be stored
+config_file=config.ini
+cp $graph $config_file $run_path
 
-env_python=~/miniconda3/envs/decpy/bin/python3
-graph=/mnt/nfs/risharma/Gitlab/tutorial/96_regular.edges
-original_config=/mnt/nfs/risharma/Gitlab/tutorial/config_celeba_sharing.ini
-config_file=~/tmp/config.ini
-procs_per_machine=16
-machines=1
+env_python=~/miniconda3/envs/decpy/bin/python3 # Path to python executable of the environment | conda recommended
+machines=1 # number of machines in the runtime
 iterations=80
 test_after=20
-eval_file=testingPeerSampler.py
-log_level=INFO
+eval_file=$decpy_path/testing.py # decentralized driver code (run on each machine)
+log_level=INFO # DEBUG | INFO | WARN | CRITICAL
 
-m=`cat $(grep addresses_filepath $original_config | awk '{print $3}') | grep $(/sbin/ifconfig ens785 | grep 'inet ' | awk '{print $2}') | cut -d'"' -f2`
+m=0 # machine id corresponding consistent with ip.json
 echo M is $m
-log_dir=$(date '+%Y-%m-%dT%H:%M')/machine$m
+
+procs_per_machine=16 # 16 processes on 1 machine
+echo procs per machine is $procs_per_machine
+
+log_dir=$run_path/$(date '+%Y-%m-%dT%H:%M')/machine$m # in the eval folder
 mkdir -p $log_dir
 
-cp $original_config $config_file
-# echo "alpha = 0.10" >> $config_file
-$env_python $eval_file -ro 0 -tea $test_after -ld $log_dir -mid $m -ps $procs_per_machine -ms $machines -is $iterations -gf $graph -ta $test_after -cf $config_file -ll $log_level -wsd $log_dir
+$env_python $eval_file -ro 0 -tea $test_after -ld $log_dir -mid $m -ps $procs_per_machine -ms $machines -is $iterations -gf $run_path/$graph -ta $test_after -cf $run_path/$config_file -ll $log_level -wsd $log_dir

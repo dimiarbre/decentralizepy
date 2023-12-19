@@ -51,7 +51,7 @@ if __name__ == "__main__":
     g = Graph()
     g.read_graph_from_file(args.graph_file, args.graph_type)
     n_machines = args.machines
-    procs_per_machine = args.procs_per_machine
+    procs_per_machine = args.procs_per_machine[0]
     l = Linear(n_machines, procs_per_machine)
     m_id = args.machine_id
 
@@ -62,7 +62,6 @@ if __name__ == "__main__":
     if sm == m_id:
         processes.append(
             mp.Process(
-                # target=PeerSamplerDynamic,
                 target=PeerSamplerMultipleAvgRounds,
                 args=[
                     sr,

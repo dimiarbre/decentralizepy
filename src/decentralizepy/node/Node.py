@@ -4,6 +4,7 @@ import math
 import os
 from collections import deque
 
+import numpy as np
 import torch
 
 from decentralizepy import utils
@@ -22,7 +23,7 @@ class Node:
         Connects given neighbor. Sends HELLO.
 
         """
-        logging.info("Sending connection request to {}".format(neighbor))
+        logging.debug("Sending connection request to {}".format(neighbor))
         self.communication.init_connection(neighbor)
         self.communication.send(neighbor, {"HELLO": self.uid, "CHANNEL": "CONNECT"})
 
@@ -76,9 +77,9 @@ class Node:
 
         """
         while neighbor not in self.barrier:
-            logging.info("Waiting HELLO from {}".format(neighbor))
+            logging.debug("Waiting HELLO from {}".format(neighbor))
             sender, _ = self.receive_hello()
-            logging.info("Received HELLO from {}".format(sender))
+            logging.debug("Received HELLO from {}".format(sender))
             self.barrier.add(sender)
 
     def connect_neighbors(self):
@@ -92,7 +93,6 @@ class Node:
             If received BYE while waiting for HELLO
 
         """
-        logging.info("Sending connection request to all neighbors")
         wait_acknowledgements = []
         for neighbor in self.my_neighbors:
             if not self.communication.already_connected(neighbor):
@@ -184,9 +184,9 @@ class Node:
         self.iterations = iterations
         self.sent_disconnections = False
 
-        logging.info("Rank: %d", self.rank)
-        logging.info("type(graph): %s", str(type(self.rank)))
-        logging.info("type(mapping): %s", str(type(self.mapping)))
+        logging.debug("Rank: %d", self.rank)
+        logging.debug("type(graph): %s", str(type(self.rank)))
+        logging.debug("type(mapping): %s", str(type(self.mapping)))
 
     def init_dataset_model(self, dataset_configs):
         """
@@ -204,9 +204,10 @@ class Node:
             dataset_configs["random_seed"] if "random_seed" in dataset_configs else 97
         )
         torch.manual_seed(random_seed)
+        np.random.seed(random_seed)
         self.dataset_params = utils.remove_keys(
             dataset_configs,
-            ["dataset_package", "dataset_class", "model_class", "random_seed"],
+            ["dataset_package", "dataset_class", "model_class"],
         )
         self.dataset = self.dataset_class(
             self.rank, self.machine_id, self.mapping, **self.dataset_params
