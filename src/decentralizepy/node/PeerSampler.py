@@ -181,7 +181,7 @@ class PeerSampler(Node):
     def receive_server_request(self):
         return self.receive_channel("SERVER_REQUEST")
 
-    def handle_request_neighors(self, data,sender):
+    def handle_request_neighors(self, data, sender):
         """Handles a request to the Peer Sampler
 
         Args:
@@ -189,7 +189,7 @@ class PeerSampler(Node):
             sender (int): The sender of the request
 
         Returns:
-            dic: The formatted response to the neighbors request. 
+            dic: The formatted response to the neighbors request.
         """
         if "iteration" in data:
             resp = {
@@ -212,7 +212,7 @@ class PeerSampler(Node):
                 self.barrier.remove(sender)
 
             elif "REQUEST_NEIGHBORS" in data:
-                resp = self.handle_request_neighors(data,sender)
+                resp = self.handle_request_neighors(data, sender)
                 self.communication.send(sender, resp)
 
     def __init__(

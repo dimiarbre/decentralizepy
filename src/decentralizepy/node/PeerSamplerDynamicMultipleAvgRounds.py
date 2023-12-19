@@ -28,13 +28,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
                 self.iteration = iteration
                 self.averaging_round = 0
                 # logging.debug(f"n_procs : {self.graph.n_procs}, degree :{self.graph_degree}")
-                self.graphs.append([
-                    Regular(
-                        self.graph.n_procs,
-                        self.graph_degree
-                        )
-                    ]
-                )
+                self.graphs.append([Regular(self.graph.n_procs, self.graph_degree)])
             elif iteration == self.iteration and averaging_round > self.averaging_round:
                 # We start a new averaging round inside the current iteration.
                 logging.debug(
@@ -48,7 +42,9 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
                     Regular(
                         self.graph.n_procs,
                         self.graph_degree,
-                        seed = self.random_seed * 100000 + 1000 * iteration + averaging_round
+                        seed=self.random_seed * 100000
+                        + 1000 * iteration
+                        + averaging_round,
                     )
                 )
 
@@ -56,7 +52,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         else:
             return self.graph.neighbors(node)
 
-    def handle_request_neighors(self,data,sender):
+    def handle_request_neighors(self, data, sender):
         """Handles a request to the Peer Sampler
 
         Args:
@@ -64,7 +60,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
             sender (int): The sender of the request
 
         Returns:
-            dic: The formatted response to the neighbors request. 
+            dic: The formatted response to the neighbors request.
         """
         if "iteration" in data and "averaging_round" in data:
             # This will work only with PeerSampleMultipleAvgRound subclasses
@@ -76,7 +72,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
             }
             return resp
         else:
-            return super().handle_request_neighors(data,sender)
+            return super().handle_request_neighors(data, sender)
 
     def __init__(
         self,

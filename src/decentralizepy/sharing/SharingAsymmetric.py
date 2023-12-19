@@ -67,9 +67,11 @@ class SharingAsymmetric(Sharing):
         self._post_step()
         self.communication_round += 1
 
-    def get_data_to_send(self,degree = None):
+    def get_data_to_send(self, degree=None):
         data_to_send = super().get_data_to_send(degree)
-        data_to_send["iteration"] = self.training_iteration # When we have multiple averaging rounds.
+        data_to_send[
+            "iteration"
+        ] = self.training_iteration  # When we have multiple averaging rounds.
         return data_to_send
 
     def __init__(
