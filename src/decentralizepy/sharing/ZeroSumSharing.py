@@ -3,7 +3,6 @@ import logging
 import copy
 import numpy as np
 
-import torch
 
 from decentralizepy.sharing.SharingAsymmetric import SharingAsymmetric
 

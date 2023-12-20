@@ -1,6 +1,7 @@
 import importlib
 import logging
-
+import os
+import numpy as np
 import torch
 
 from decentralizepy.sharing.Sharing import Sharing
@@ -23,8 +24,23 @@ class SharingAsymmetric(Sharing):
         to_send = self.get_data_to_send()
         to_send["CHANNEL"] = "DPSGD"
         to_send["averaging_round"] = averaging_round
+        last_neighbor = -1
         for neighbor in neighbors:
             self.communication.send(neighbor, to_send)
+            last_neighbor = neighbor
+        if averaging_round == 0 and self.save_models_for_attacks >0:
+            if (self.training_iteration+1)%self.save_models_for_attacks == 0:
+                logging.debug(f"{to_send}")
+                self.save_sent_model(to_send["params"],last_neighbor)
+
+
+    def save_sent_model(self,model_weights, target):
+        model_name = f"model_it{self.training_iteration+1}_{self.uid}_to{target}.npy"
+        model_path = os.path.join(self.model_save_folder,model_name)
+        logging.debug(f"Saving model parameters to {model_path}")
+        with open(model_path,'wb') as f:
+            np.save(f,model_weights)
+
 
     def _averaging(self, peer_deques):
         """
@@ -88,7 +104,19 @@ class SharingAsymmetric(Sharing):
         compression_package=None,
         compression_class=None,
         float_precision=None,
+        save_models_for_attacks=-1
     ):
+        self.training_iteration = None
+        self.save_models_for_attacks = save_models_for_attacks
+        self.model_save_folder = os.path.join(
+            log_dir,
+            f"attacked_model/machine{machine_id}/{rank}/"
+        )
+        if not os.path.exists(self.model_save_folder):
+            os.makedirs(self.model_save_folder)
+        else:
+            logging.warning(f"The directory {self.model_save_folder} already exists")
+
         super().__init__(
             rank=rank,
             machine_id=machine_id,
@@ -103,5 +131,3 @@ class SharingAsymmetric(Sharing):
             compression_class=compression_class,
             float_precision=float_precision,
         )
-
-        self.training_iteration = None
