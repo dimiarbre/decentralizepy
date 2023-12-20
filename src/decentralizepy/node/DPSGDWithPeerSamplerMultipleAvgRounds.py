@@ -232,6 +232,7 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
                     "total_bytes": {},
                     "total_meta": {},
                     "total_data_per_n": {},
+                    "communication_round":{},
                 }
 
             results_dict["total_bytes"][iteration + 1] = self.communication.total_bytes
@@ -244,6 +245,10 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
                 results_dict["total_data_per_n"][
                     iteration + 1
                 ] = self.communication.total_data
+            if hasattr(self.sharing, "communication_round"):
+                results_dict["communication_round"][
+                    iteration + 1
+                ]= self.sharing.communication_round
 
             if rounds_to_train_evaluate == 0:
                 logging.info("Evaluating on train set.")
