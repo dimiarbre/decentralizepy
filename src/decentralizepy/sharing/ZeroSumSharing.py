@@ -51,8 +51,9 @@ class ZeroSumSharing(SharingAsymmetric):
                     np.average(noise),
                 )
                 to_send["params"] += noise
-                # We attack an arbitrary neighbor (always the same in a static topology)
-                self.check_and_save_sent_model(to_send["params"], neighbor)
+                if i == 0:
+                   # We attack an arbitrary neighbor (always the same in a static topology)
+                    self.check_and_save_sent_model(to_send["params"], neighbor)
 
             else:
                 to_send = current_model_data
