@@ -106,6 +106,38 @@ class SharingAsymmetric(Sharing):
         float_precision=None,
         save_models_for_attacks=-1
     ):
+        """
+        Constructor
+
+        Parameters
+        ----------
+        rank : int
+            Local rank
+        machine_id : int
+            Global machine id
+        communication : decentralizepy.communication.Communication
+            Communication module used to send and receive messages
+        mapping : decentralizepy.mappings.Mapping
+            Mapping (rank, machine_id) -> uid
+        graph : decentralizepy.graphs.Graph
+            Graph representing neighbors
+        model : decentralizepy.models.Model
+            Model to train
+        dataset : decentralizepy.datasets.Dataset
+            Dataset for sharing data. Not implemented yet! TODO
+        log_dir : str
+            Location to write shared_params (only writing for 2 procs per machine)
+        compress: bool, default False
+            Wether to apply a compression method or not.
+        compression_package : str
+            Import path of a module that implements the compression.Compression.Compression class
+        compression_class : str
+            Name of the compression class inside the compression package
+        float_precision: 
+        
+        save_models_for_attacks: int, default -1
+            The interval at which a sent model must be logged.
+        """
         self.training_iteration = None
         self.save_models_for_attacks = save_models_for_attacks
         self.model_save_folder = os.path.join(
