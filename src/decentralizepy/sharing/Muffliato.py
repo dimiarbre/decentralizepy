@@ -50,10 +50,8 @@ class Muffliato(SharingAsymmetric):
             if (
                 averaging_round == 0 and i == 0
             ):  # We attack the model sent to one neighbor, as if an attacker saw the message.
+                self.check_and_save_sent_model(to_send["params"], neighbor)
                 # TODO: probably randomize which neighbor is attacked to avoid attacking always the same one?
-                # logging.debug(f"Attacking model sent to {neighbor}.")
-                # TODO: Make the attack at the correct time
-                pass
 
     def __init__(
         self,
@@ -69,7 +67,7 @@ class Muffliato(SharingAsymmetric):
         compression_package=None,
         compression_class=None,
         noise_std=0,
-        save_models_for_attacks=-1
+        save_models_for_attacks=-1,
     ):
         """
         Constructor
