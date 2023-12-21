@@ -125,7 +125,7 @@ class PeerSampler(Node):
         iterations=1,
         log_dir=".",
         log_level=logging.INFO,
-        *args
+        *args,
     ):
         """
         Construct objects.
@@ -181,6 +181,25 @@ class PeerSampler(Node):
     def receive_server_request(self):
         return self.receive_channel("SERVER_REQUEST")
 
+    def handle_request_neighors(self, data, sender):
+        """Handles a request to the Peer Sampler
+
+        Args:
+            data (dic): The request
+            sender (int): The sender of the request
+
+        Returns:
+            dic: The formatted response to the neighbors request.
+        """
+        if "iteration" in data:
+            resp = {
+                "NEIGHBORS": self.get_neighbors(sender, data["iteration"]),
+                "CHANNEL": "PEERS",
+            }
+        else:
+            resp = {"NEIGHBORS": self.get_neighbors(sender), "CHANNEL": "PEERS"}
+        return resp
+
     def run(self):
         """
         Start the peer-sampling service.
@@ -193,14 +212,7 @@ class PeerSampler(Node):
                 self.barrier.remove(sender)
 
             elif "REQUEST_NEIGHBORS" in data:
-                logging.debug("Received {} from {}".format("Request", sender))
-                if "iteration" in data:
-                    resp = {
-                        "NEIGHBORS": self.get_neighbors(sender, data["iteration"]),
-                        "CHANNEL": "PEERS",
-                    }
-                else:
-                    resp = {"NEIGHBORS": self.get_neighbors(sender), "CHANNEL": "PEERS"}
+                resp = self.handle_request_neighors(data, sender)
                 self.communication.send(sender, resp)
 
     def __init__(
@@ -213,7 +225,7 @@ class PeerSampler(Node):
         iterations=1,
         log_dir=".",
         log_level=logging.INFO,
-        *args
+        *args,
     ):
         """
         Constructor
@@ -261,7 +273,7 @@ class PeerSampler(Node):
             iterations,
             log_dir,
             log_level,
-            *args
+            *args,
         )
 
         self.instantiate(
@@ -273,7 +285,7 @@ class PeerSampler(Node):
             iterations,
             log_dir,
             log_level,
-            *args
+            *args,
         )
 
         self.run()

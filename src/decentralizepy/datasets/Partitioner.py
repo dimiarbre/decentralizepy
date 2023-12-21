@@ -1,3 +1,4 @@
+import logging
 from random import Random
 
 import numpy as np
@@ -159,6 +160,9 @@ class KShardDataPartitioner(DataPartitioner):
             Seed for generating a random subset
 
         """
+        logging.info(
+            f"Creating data partition shards with sizes : {sizes} and {shards} shards."
+        )
         self.data = data
         self.partitions = []
         data_len = len(data)
@@ -182,6 +186,9 @@ class KShardDataPartitioner(DataPartitioner):
                     index_start = indexes[:start]
                     index_start.extend(indexes[start + part_len :])
                     indexes = index_start
+        logging.debug(
+            f"Partition sizes {[len(partition) for partition in self.partitions]}"
+        )
 
 
 class DirichletDataPartitioner(DataPartitioner):

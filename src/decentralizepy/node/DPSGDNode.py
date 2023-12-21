@@ -50,7 +50,9 @@ class DPSGDNode(Node):
         return self.my_neighbors
 
     def receive_DPSGD(self):
-        return self.receive_channel("DPSGD")
+        sender, data = self.receive_channel("DPSGD")
+        logging.info(f"Received Model from {sender} of iteration {data['iteration']}")
+        return sender, data
 
     def run(self):
         """
@@ -285,7 +287,7 @@ class DPSGDNode(Node):
         test_after=5,
         train_evaluate_after=1,
         reset_optimizer=1,
-        *args
+        *args,
     ):
         """
         Construct objects.
@@ -383,7 +385,7 @@ class DPSGDNode(Node):
         test_after=5,
         train_evaluate_after=1,
         reset_optimizer=1,
-        *args
+        *args,
     ):
         """
         Constructor
@@ -450,7 +452,7 @@ class DPSGDNode(Node):
             test_after,
             train_evaluate_after,
             reset_optimizer,
-            *args
+            *args,
         )
         logging.info(
             "Each proc uses %d threads out of %d.", self.threads_per_proc, total_threads

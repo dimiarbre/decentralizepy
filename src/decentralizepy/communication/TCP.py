@@ -90,6 +90,8 @@ class TCP(Communication):
         self.router.setsockopt(zmq.IDENTITY, self.identity)
         self.router.setsockopt(zmq.RCVTIMEO, self.recv_timeout)
         self.router.setsockopt(zmq.ROUTER_MANDATORY, 1)
+
+        logging.info(f"Binding to {self.addr(rank, machine_id)}")
         self.router.bind(self.addr(rank, machine_id))
 
         self.total_data = 0
@@ -193,6 +195,7 @@ class TCP(Communication):
             If received HELLO
 
         """
+
         while True:
             try:
                 sender, recv = self.router.recv_multipart()
