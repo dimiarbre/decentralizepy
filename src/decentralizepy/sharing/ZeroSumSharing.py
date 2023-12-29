@@ -25,11 +25,11 @@ class ZeroSumSharing(SharingAsymmetric):
             nb_neighbors = len(neighbors)
             if self.add_self_noise:
                 # To add self noise, we simulate an additional neighbor.
-                nb_neighbors +=1
+                nb_neighbors += 1
 
-            #TODO: Be careful of the noise correction term that was there previously, should we keep it?
-            # std_to_gen = np.sqrt(nb_neighbors / (nb_neighbors - 1)) * self.noise_std
-            std_to_gen = self.noise_std
+            # TODO: Be careful of the noise correction term that was there previously, should we keep it?
+            std_to_gen = np.sqrt(nb_neighbors / (nb_neighbors - 1)) * self.noise_std
+            # std_to_gen = self.noise_std
 
             noises = np.random.normal(
                 0, std_to_gen, (nb_neighbors,) + current_model_data["params"].shape
@@ -46,11 +46,11 @@ class ZeroSumSharing(SharingAsymmetric):
             logging.debug(
                 f"Noise shape : {noises.shape}. Avg shape : {avg_noise.shape}."
             )
-
             if self.add_self_noise:
-                self_model =  copy.deepcopy(current_model_data)
+                self_model = copy.deepcopy(current_model_data)
                 noise = noises[-1]
-                logging.debug("Adding self noise with shape : %s. Current noise avg : %s.",
+                logging.debug(
+                    "Adding self noise with shape : %s. Current noise avg : %s.",
                     noise.shape,
                     np.average(noise),
                 )
@@ -68,7 +68,7 @@ class ZeroSumSharing(SharingAsymmetric):
                 )
                 to_send["params"] += noise
                 if i == 0:
-                   # We attack an arbitrary neighbor (always the same in a static topology)
+                    # We attack an arbitrary neighbor (always the same in a static topology)
                     self.check_and_save_sent_model(to_send["params"], neighbor)
 
             else:
