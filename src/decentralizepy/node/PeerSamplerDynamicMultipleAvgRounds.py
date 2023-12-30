@@ -1,5 +1,6 @@
 import logging
 from collections import deque
+import os
 
 from decentralizepy.graphs.Graph import Graph
 from decentralizepy.graphs.Regular import Regular
@@ -73,6 +74,15 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         else:
             return super().handle_request_neighors(data, sender)
 
+    def log_graphs(self):
+        logging.info("Saving graphs:")
+        graph_log_dir = f"{self.log_dir}/graphs/"
+        os.mkdir(graph_log_dir)
+        for iteration,iteration_graph_list in enumerate(self.graphs):
+            for averaging_round, graph in enumerate(iteration_graph_list):
+                graph.write_graph_to_file(f"{graph_log_dir}{iteration}_{averaging_round}")
+        logging.info("Saved graphs")
+
     def __init__(
         self,
         rank: int,
@@ -131,8 +141,8 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
 
         self.graphs = []
 
-        nodeConfigs = config["NODE"]
-        self.graph_degree = nodeConfigs["graph_degree"]
+        node_configs = config["NODE"]
+        self.graph_degree = node_configs["graph_degree"]
 
         self.instantiate(
             rank=rank,
@@ -147,5 +157,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         )
 
         self.run()
+
+        self.log_graphs()
 
         logging.info("Peer Sampler exiting")
