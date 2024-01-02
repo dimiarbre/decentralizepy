@@ -1,6 +1,6 @@
 import logging
-from collections import deque
 import os
+from collections import deque
 
 from decentralizepy.graphs.Graph import Graph
 from decentralizepy.graphs.Regular import Regular
