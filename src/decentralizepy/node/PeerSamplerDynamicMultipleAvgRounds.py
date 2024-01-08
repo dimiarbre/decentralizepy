@@ -1,4 +1,5 @@
 import logging
+import os
 from collections import deque
 
 from decentralizepy.graphs.Graph import Graph
@@ -16,6 +17,9 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
     def get_neighbors(self, node, iteration=None, averaging_round=0):
         # logging.debug(f"Node : {node}, {iteration}, {averaging_round} ")
         if iteration is not None:
+            current_seed = (
+                self.random_seed * 100000 + 10000000 * iteration + averaging_round
+            )
             if iteration > self.iteration:
                 # We start a new iteration
                 logging.debug(
@@ -28,7 +32,9 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
                 self.iteration = iteration
                 self.averaging_round = 0
                 # logging.debug(f"n_procs : {self.graph.n_procs}, degree :{self.graph_degree}")
-                self.graphs.append([Regular(self.graph.n_procs, self.graph_degree)])
+                self.graphs.append(
+                    [Regular(self.graph.n_procs, self.graph_degree, seed=current_seed)]
+                )
             elif iteration == self.iteration and averaging_round > self.averaging_round:
                 # We start a new averaging round inside the current iteration.
                 logging.debug(
@@ -39,13 +45,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
                 ), f"Expected to be averaging round {self.averaging_round + 1}, got {averaging_round}"
                 self.averaging_round = averaging_round
                 self.graphs[iteration].append(
-                    Regular(
-                        self.graph.n_procs,
-                        self.graph_degree,
-                        seed=self.random_seed * 100000
-                        + 1000 * iteration
-                        + averaging_round,
-                    )
+                    Regular(self.graph.n_procs, self.graph_degree, seed=current_seed)
                 )
 
             return self.graphs[iteration][averaging_round].neighbors(node)
@@ -73,6 +73,15 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
             return resp
         else:
             return super().handle_request_neighors(data, sender)
+
+    def log_graphs(self):
+        logging.info("Saving graphs:")
+        graph_log_dir = f"{self.log_dir}/graphs/"
+        os.mkdir(graph_log_dir)
+        for iteration,iteration_graph_list in enumerate(self.graphs):
+            for averaging_round, graph in enumerate(iteration_graph_list):
+                graph.write_graph_to_file(f"{graph_log_dir}{iteration}_{averaging_round}")
+        logging.info("Saved graphs")
 
     def __init__(
         self,
@@ -132,8 +141,8 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
 
         self.graphs = []
 
-        nodeConfigs = config["NODE"]
-        self.graph_degree = nodeConfigs["graph_degree"]
+        node_configs = config["NODE"]
+        self.graph_degree = node_configs["graph_degree"]
 
         self.instantiate(
             rank=rank,
@@ -148,5 +157,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         )
 
         self.run()
+
+        self.log_graphs()
 
         logging.info("Peer Sampler exiting")

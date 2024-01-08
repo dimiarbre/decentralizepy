@@ -42,37 +42,6 @@ class PeerSamplerMultipleAvgRounds(PeerSampler):
     def get_neighbors(self, node, iteration=None, averaging_round=0):
         return self.graph.neighbors(node)
 
-    def run(self):
-        """
-        Start the peer-sampling service.
-
-        """
-        while len(self.barrier) > 0:
-            sender, data = self.receive_server_request()
-            if "BYE" in data:
-                logging.debug("Received {} from {}".format("BYE", sender))
-                self.barrier.remove(sender)
-
-            elif "REQUEST_NEIGHBORS" in data:
-                logging.debug("Received {} from {}".format("Request", sender))
-                if "iteration" in data:
-                    if "averaging_round" in data:
-                        resp = {
-                            "NEIGHBORS": self.get_neighbors(
-                                sender, data["iteration"], data["averaging_round"]
-                            ),
-                            "CHANNEL": "PEERS",
-                        }
-                    else:
-                        resp = {
-                            "NEIGHBORS": self.get_neighbors(sender, data["iteration"]),
-                            "CHANNEL": "PEERS",
-                        }
-
-                else:
-                    resp = {"NEIGHBORS": self.get_neighbors(sender), "CHANNEL": "PEERS"}
-                self.communication.send(sender, resp)
-
     def __init__(
         self,
         rank: int,
