@@ -209,7 +209,7 @@ class Femnist(Dataset):
         train_dir="",
         test_dir="",
         sizes="",
-        test_batch_size=1024,
+        test_batch_size=64,
         validation_source="",
         validation_size="",
     ):
@@ -239,7 +239,7 @@ class Femnist(Dataset):
             By default, each process gets an equal amount.
         test_batch_size : int, optional
             Batch size during testing. Default value is 64
-         validation_source: string, optional
+        validation_source: string, optional
             Source of validation set. One of 'Test', 'Train'
         validation_size: int, optional
             Fraction of the testset used as validation set
@@ -266,6 +266,10 @@ class Femnist(Dataset):
 
         if self.__testing__:
             self.load_testset()
+
+        if self.label_distribution is None:
+            self.get_label_distribution()
+        logging.info(f"Dataset label distribution: {self.label_distribution}")
 
     def get_client_ids(self):
         """

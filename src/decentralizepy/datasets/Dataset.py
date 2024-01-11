@@ -19,7 +19,7 @@ class Dataset:
         train_dir="",
         test_dir="",
         sizes="",
-        test_batch_size="",
+        test_batch_size=64,
         validation_source="",
         validation_size="",
     ):

@@ -120,7 +120,7 @@ class CIFAR10(Dataset):
         train_dir="",
         test_dir="",
         sizes="",
-        test_batch_size=1024,
+        test_batch_size=64,
         partition_niid="simple",
         alpha=100,
         shards=1,
@@ -195,6 +195,10 @@ class CIFAR10(Dataset):
 
         if self.__testing__:
             self.load_testset()
+
+        if self.label_distribution is None:
+            self.get_label_distribution()
+        logging.info(f"Dataset label distribution: {self.label_distribution}")
 
     def get_trainset(self, batch_size=1, shuffle=False):
         """
