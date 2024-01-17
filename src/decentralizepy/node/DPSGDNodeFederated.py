@@ -150,6 +150,7 @@ class DPSGDNodeFederated(Node):
         self.reset_optimizer = reset_optimizer
         self.sent_disconnections = False
 
+        logging.debug("UID: %d", self.uid)
         logging.debug("Rank: %d", self.rank)
         logging.debug("type(graph): %s", str(type(self.rank)))
         logging.debug("type(mapping): %s", str(type(self.mapping)))
