@@ -151,7 +151,7 @@ class DPSGDNode(Node):
                     iteration + 1
                 ] = self.communication.total_data
 
-            if rounds_to_train_evaluate == 0:
+            if rounds_to_train_evaluate == 0 or iteration == 0:
                 logging.info("Evaluating on train set.")
                 rounds_to_train_evaluate = self.train_evaluate_after * change
                 loss_after_sharing = self.trainer.eval_loss(self.dataset)
@@ -164,7 +164,7 @@ class DPSGDNode(Node):
                     os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
                 )
 
-            if self.dataset.__testing__ and rounds_to_test == 0:
+            if self.dataset.__testing__ and (iteration == 0 or rounds_to_test == 0):
                 rounds_to_test = self.test_after * change
                 logging.info("Evaluating on test set.")
                 ta, tl = self.dataset.test(self.model, self.loss)

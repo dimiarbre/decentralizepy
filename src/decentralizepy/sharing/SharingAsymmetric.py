@@ -35,7 +35,10 @@ class SharingAsymmetric(Sharing):
     def check_and_save_sent_model(self, model_weights, target):
         if self.save_models_for_attacks > 0:
             # Ensure we are at the right iteration
-            if (self.training_iteration + 1) % self.save_models_for_attacks == 0:
+            if (
+                self.training_iteration == 0
+                or (self.training_iteration + 1) % self.save_models_for_attacks == 0
+            ):
                 model_name = (
                     f"model_it{self.training_iteration+1}_{self.uid}_to{target}.npy"
                 )
