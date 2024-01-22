@@ -252,7 +252,8 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
 
             if rounds_to_train_evaluate == 0 or iteration == 0:
                 logging.info("Evaluating on train set.")
-                rounds_to_train_evaluate = self.train_evaluate_after * change
+                if iteration != 0:  # We only reset the count after the 1st iteration
+                    rounds_to_train_evaluate = self.train_evaluate_after * change
                 loss_after_sharing = self.trainer.eval_loss(self.dataset)
                 results_dict["train_loss"][iteration + 1] = loss_after_sharing
                 self.save_plot(
@@ -264,7 +265,8 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
                 )
 
             if self.dataset.__testing__ and (rounds_to_test == 0 or iteration == 0):
-                rounds_to_test = self.test_after * change
+                if iteration != 0:  # We only reset the count after the 1st iteration
+                    rounds_to_test = self.test_after * change
                 logging.info("Evaluating on test set.")
                 ta, tl = self.dataset.test(self.model, self.loss)
                 results_dict["test_acc"][iteration + 1] = ta
