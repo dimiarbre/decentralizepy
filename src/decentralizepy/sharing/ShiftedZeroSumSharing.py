@@ -4,85 +4,41 @@ import logging
 
 import numpy as np
 
-from decentralizepy.sharing.SharingAsymmetric import SharingAsymmetric
+from decentralizepy.sharing.ZeroSumSharing import ZeroSumSharing
 
 
-class ZeroSumSharing(SharingAsymmetric):
+class ShiftedZeroSumSharing(ZeroSumSharing):
     """
     API defining who to share with and what, and what to do on receiving
 
     """
 
     def generate_noises(self, nb_neighbors, model_shape):
-        if self.add_self_noise:
-            # To add self noise, we simulate an additional neighbor.
-            nb_neighbors += 1
+        assert (
+            self.add_self_noise
+        ), "ShiftedZeroSumSharing and its inheritents should have self noise"
 
-        std_to_gen = (
-            np.sqrt(nb_neighbors / (nb_neighbors - 1)) * self.noise_std
-        )  # Correct the noise variance
-        # TODO: Be careful of the noise correction term that was there previously, should we keep it?
+        std_to_gen = self.noise_std
 
-        # std_to_gen = self.noise_std
+        local_offset = np.random.normal(0, self.shift_std)
 
-        noises = np.random.normal(0, std_to_gen, (nb_neighbors,) + model_shape)
-        avg_noise = np.average(noises, axis=0)
+        noises = np.random.normal(
+            local_offset, std_to_gen, (nb_neighbors + 1,) + model_shape
+        )
+
         # Normalize the noise
-        noises -= avg_noise
+        noises[-1] = -np.sum(noises[:-1, ::], axis=0)
 
+        logging.debug("Sum of noises is %s", np.sum(noises, axis=0))
+        logging.debug("Std of the self noise: %s", np.std(noises[-1]))
         # Statistics logging
         self.generated_noise_std = np.std(noises)
         logging.info(
             f"Total noise std: {self.generated_noise_std}, expected std {self.noise_std}. Generated with std {std_to_gen}."
         )
-        logging.debug(f"Noise shape : {noises.shape}. Avg shape : {avg_noise.shape}.")
+        # logging.debug(f"Noise shape : {noises.shape}. Avg shape : {avg_noise.shape}.")
 
         return noises
-
-    def send_all(self, neighbors, averaging_round=0):
-        logging.info(
-            f"Sending to all the neighbors {neighbors} for averaging step {averaging_round}"
-        )
-        current_model_data = self.get_data_to_send()
-        current_model_data["CHANNEL"] = "DPSGD"
-        current_model_data["averaging_round"] = averaging_round
-
-        if averaging_round == 0:  # Only noise on the first averaging round
-            nb_neighbors = len(neighbors)
-
-            noises = self.generate_noises(
-                nb_neighbors=nb_neighbors,
-                model_shape=current_model_data["params"].shape,
-            )
-
-            if self.add_self_noise:
-                self_model = copy.deepcopy(current_model_data)
-                noise = noises[-1]
-                logging.debug(
-                    "Adding self noise with shape : %s. Current noise avg : %s.",
-                    noise.shape,
-                    np.average(noise),
-                )
-                self_model["params"] += noise
-                self.model.load_state_dict(self.deserialized_model(self_model))
-
-        for i, neighbor in enumerate(neighbors):
-            if averaging_round == 0:
-                to_send = copy.deepcopy(current_model_data)
-                noise = noises[i]
-                logging.debug(
-                    "Current noise shape : %s. Current noise avg : %s.",
-                    noise.shape,
-                    np.average(noise),
-                )
-                to_send["params"] += noise
-                if i == 0:
-                    # We attack an arbitrary neighbor (always the same in a static topology)
-                    self.check_and_save_sent_model(to_send["params"], neighbor)
-
-            else:
-                to_send = current_model_data
-            self.communication.send(neighbor, to_send)
 
     def __init__(
         self,
@@ -99,7 +55,7 @@ class ZeroSumSharing(SharingAsymmetric):
         compression_class=None,
         noise_std=0,
         save_models_for_attacks=-1,
-        self_noise=False,
+        shift_std=0,
     ):
         """
         Constructor
@@ -135,9 +91,7 @@ class ZeroSumSharing(SharingAsymmetric):
         self_noise: bool, default False
             Whether to also noise the local model or not
         """
-        self.noise_std = noise_std
-        self.generated_noise_std = None
-        self.add_self_noise = self_noise
+        self.shift_std = shift_std
         super().__init__(
             rank=rank,
             machine_id=machine_id,
@@ -150,5 +104,7 @@ class ZeroSumSharing(SharingAsymmetric):
             compress=compress,
             compression_package=compression_package,
             compression_class=compression_class,
+            noise_std=noise_std,
             save_models_for_attacks=save_models_for_attacks,
+            self_noise=True,  # In order to cancel in this setting, the node MUST have self noise.
         )
