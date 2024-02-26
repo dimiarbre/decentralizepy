@@ -20,19 +20,22 @@ class ShiftedZeroSumSharing(ZeroSumSharing):
 
         std_to_gen = self.noise_std
 
-        local_offset = np.random.normal(0, self.shift_std)
+        local_offset = np.random.normal(0, self.shift_std, size=model_shape)
+        logging.info("Expected offset: %s", self.shift_std)
+        logging.info("Generated local offset std : %s.", np.std(local_offset))
+        logging.debug("Local offset : %s", local_offset)
 
         noises = np.random.normal(
             local_offset, std_to_gen, (nb_neighbors + 1,) + model_shape
         )
 
-        # Normalize the noise
+        # Normalize the noise, we simply override the last noise
         noises[-1] = -np.sum(noises[:-1, ::], axis=0)
 
         logging.debug("Sum of noises is %s", np.sum(noises, axis=0))
         logging.debug("Std of the self noise: %s", np.std(noises[-1]))
         # Statistics logging
-        self.generated_noise_std = np.std(noises)
+        self.generated_noise_std = np.std(noises[:-1])
         logging.info(
             f"Total noise std: {self.generated_noise_std}, expected std {self.noise_std}. Generated with std {std_to_gen}."
         )
@@ -108,3 +111,5 @@ class ShiftedZeroSumSharing(ZeroSumSharing):
             save_models_for_attacks=save_models_for_attacks,
             self_noise=True,  # In order to cancel in this setting, the node MUST have self noise.
         )
+
+        logging.info("Shift std: %s", self.shift_std)
