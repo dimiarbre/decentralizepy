@@ -26,9 +26,19 @@ PIXEL_RANGE = 256.0
 
 class FemnistLabelSplit(Femnist):
     """
-    Class for the FEMNIST dataset
+    Class for the FEMNIST dataset split by label
 
     """
+
+    def __get_item__(self, i):
+        for j, size in enumerate(self.dataset_sizes):
+            if i < size:
+                return torch.load(self.data_files[j])[i]
+            i -= size
+        raise IndexError
+
+    def __sizeof__(self) -> int:
+        return self.dataset_size
 
     def load_trainset(self):
         """
@@ -48,25 +58,9 @@ class FemnistLabelSplit(Femnist):
             self.sizes[-1] += 1.0 - frac * self.num_partitions
             logging.debug("Size fractions: {}".format(self.sizes))
 
-        my_clients = DataPartitioner(files, self.sizes, seed=self.random_seed).use(
+        my_train_data = DataPartitioner(self, self.sizes, seed=self.random_seed).use(
             self.dataset_id
         )
-        my_train_data = {"x": [], "y": []}
-        self.clients = []
-        self.num_samples = []
-        logging.debug("Clients Length: %d", c_len)
-        logging.debug("My_clients_len: %d", my_clients.__len__())
-        for i in range(my_clients.__len__()):
-            cur_file = my_clients.__getitem__(i)
-
-            clients, _, train_data = self.__read_file__(
-                os.path.join(self.train_dir, cur_file)
-            )
-            for cur_client in clients:
-                self.clients.append(cur_client)
-                my_train_data["x"].extend(train_data[cur_client]["x"])
-                my_train_data["y"].extend(train_data[cur_client]["y"])
-                self.num_samples.append(len(train_data[cur_client]["y"]))
         self.train_x = (
             np.array(my_train_data["x"], dtype=np.dtype("float32"))
             .reshape(-1, 28, 28, 1)
@@ -93,53 +87,89 @@ class FemnistLabelSplit(Femnist):
         )
 
         if self.__validating__ and self.validation_source == "Train":
-            num_samples = int(self.train_x.shape[0] * self.validation_size)
-            validation_indexes = np.random.choice(
-                self.train_x.shape[0], num_samples, replace=False
-            )
+            raise NotImplementedError  # TODO: check the validation with this custom FEMNIST.
+            # num_samples = int(self.train_x.shape[0] * self.validation_size)
+            # validation_indexes = np.random.choice(
+            #     self.train_x.shape[0], num_samples, replace=False
+            # )
 
-            self.validation_x = self.train_x[validation_indexes]
-            self.validation_y = self.train_y[validation_indexes]
+            # self.validation_x = self.train_x[validation_indexes]
+            # self.validation_y = self.train_y[validation_indexes]
 
-            self.train_x = np.delete(self.train_x, validation_indexes, axis=0)
-            self.train_y = np.delete(self.train_y, validation_indexes, axis=0)
+            # self.train_x = np.delete(self.train_x, validation_indexes, axis=0)
+            # self.train_y = np.delete(self.train_y, validation_indexes, axis=0)
 
-    def load_testset(self):
+    def __init__(
+        self,
+        rank: int,
+        machine_id: int,
+        mapping: Mapping,
+        random_seed: int = 1234,
+        only_local=False,
+        train_dir="",
+        test_dir="",
+        sizes="",
+        test_batch_size=64,
+        validation_source="",
+        validation_size="",
+    ):
         """
-        Loads the testing set.
+        Constructor which reads the data files, instantiates and partitions the dataset
+
+        Parameters
+        ----------
+        rank : int
+            Rank of the current process (to get the partition).
+        machine_id : int
+            Machine ID
+        mapping : decentralizepy.mappings.Mapping
+            Mapping to convert rank, machine_id -> uid for data partitioning
+            It also provides the total number of global processes
+        random_seed : int, optional
+            Random seed for dataset
+        only_local : bool, optional
+            True if the dataset needs to be partioned only among local procs, False otherwise
+        train_dir : str, optional
+            Path to the training data files. Required to instantiate the training set
+            The training set is partitioned according to the number of global processes and sizes
+        test_dir : str. optional
+            Path to the testing data files Required to instantiate the testing set
+        sizes : list(int), optional
+            A list of fractions specifying how much data to alot each process. Sum of fractions should be 1.0
+            By default, each process gets an equal amount.
+        test_batch_size : int, optional
+            Batch size during testing. Default value is 64
+        validation_source: string, optional
+            Source of validation set. One of 'Test', 'Train'
+        validation_size: int, optional
+            Fraction of the testset used as validation set
 
         """
-        logging.info("Loading testing set.")
-        _, _, d = self.__read_dir__(self.test_dir)
-        test_x = []
-        test_y = []
-        for test_data in d.values():
-            for x in test_data["x"]:
-                test_x.append(x)
-            for y in test_data["y"]:
-                test_y.append(y)
-        self.test_x = (
-            np.array(test_x, dtype=np.dtype("float32"))
-            .reshape(-1, 28, 28, 1)
-            .transpose(0, 3, 1, 2)
+        with open(os.path.join(train_dir, "splits_sizes.json"), "r") as f:
+            dataset_dict = json.load(f)
+
+        self.dataset_sizes = [size for _, size in dataset_dict.items()]
+        self.data_files = []
+        for file in os.listdir(train_dir):
+            if file.endswith(".pt"):
+                self.data_files.append(file)
+        self.dataset_size = sum(self.dataset_sizes)
+        logging.info(f"Data split: {self.dataset_sizes}")
+        logging.info(f"Data locations: {self.data_files}")
+
+        super().__init__(
+            rank=rank,
+            machine_id=machine_id,
+            mapping=mapping,
+            random_seed=random_seed,
+            only_local=only_local,
+            train_dir=train_dir,
+            test_dir=test_dir,
+            sizes=sizes,
+            test_batch_size=test_batch_size,
+            validation_source=validation_source,
+            validation_size=validation_size,
         )
-        self.test_y = np.array(test_y, dtype=np.dtype("int64")).reshape(-1)
-        logging.info("test_x.shape: %s", str(self.test_x.shape))
-        logging.info("test_y.shape: %s", str(self.test_y.shape))
-        assert self.test_x.shape[0] == self.test_y.shape[0]
-        assert self.test_x.shape[0] > 0
-
-        if self.__validating__ and self.validation_source == "Test":
-            num_samples = int(self.test_x.shape[0] * self.validation_size)
-            validation_indexes = np.random.choice(
-                self.test_x.shape[0], num_samples, replace=False
-            )
-
-            self.validation_x = self.test_x[validation_indexes]
-            self.validation_y = self.test_y[validation_indexes]
-
-            self.test_x = np.delete(self.test_x, validation_indexes, axis=0)
-            self.test_y = np.delete(self.test_y, validation_indexes, axis=0)
 
 
 class LogisticRegression(Model):
