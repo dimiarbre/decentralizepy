@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 from decentralizepy.datasets.Data import Data
 from decentralizepy.datasets.Dataset import Dataset
 from decentralizepy.datasets.Femnist import Femnist
-from decentralizepy.datasets.Partitioner import DataPartitioner
+from decentralizepy.datasets.Partitioner import DataPartitioner, KShardDataPartitioner
 from decentralizepy.mappings.Mapping import Mapping
 from decentralizepy.models.Model import Model
 from decentralizepy.models.Resnet import BasicBlock, Bottleneck, conv1x1
@@ -30,43 +30,24 @@ class FemnistLabelSplit(Femnist):
 
     """
 
-    def __get_item__(self, i):
-        for j, size in enumerate(self.dataset_sizes):
-            if i < size:
-                return torch.load(self.data_files[j])[i]
-            i -= size
-        raise IndexError
-
-    def __sizeof__(self) -> int:
-        return self.dataset_size
-
     def load_trainset(self):
         """
         Loads the training set. Partitions it if needed.
 
         """
         logging.info("Loading training set.")
-        files = os.listdir(self.train_dir)
-        files = [f for f in files if f.endswith(".json")]
-        files.sort()
-        c_len = len(files)
 
-        if self.sizes == None:  # Equal distribution of data among processes
-            e = c_len // self.num_partitions
-            frac = e / c_len
-            self.sizes = [frac] * self.num_partitions
-            self.sizes[-1] += 1.0 - frac * self.num_partitions
-            logging.debug("Size fractions: {}".format(self.sizes))
-
-        my_train_data = DataPartitioner(self, self.sizes, seed=self.random_seed).use(
-            self.dataset_id
+        my_train_data = torch.load(self.data_file)
+        logging.info(f"LENGTH: {len(my_train_data)}")
+        temp = np.array(
+            [data[0] for data in my_train_data],
+            dtype=np.dtype("float32"),
         )
-        self.train_x = (
-            np.array(my_train_data["x"], dtype=np.dtype("float32"))
-            .reshape(-1, 28, 28, 1)
-            .transpose(0, 3, 1, 2)
-        )
-        self.train_y = np.array(my_train_data["y"], dtype=np.dtype("int64")).reshape(-1)
+        logging.info(temp.shape)
+        self.train_x = temp.reshape(-1, 28, 28, 1).transpose(0, 3, 1, 2)
+        self.train_y = np.array(
+            [data[1] for data in my_train_data], dtype=np.dtype("int64")
+        ).reshape(-1)
         logging.info("train_x.shape: %s", str(self.train_x.shape))
         logging.info("train_y.shape: %s", str(self.train_y.shape))
         assert self.train_x.shape[0] == self.train_y.shape[0]
@@ -145,17 +126,8 @@ class FemnistLabelSplit(Femnist):
             Fraction of the testset used as validation set
 
         """
-        with open(os.path.join(train_dir, "splits_sizes.json"), "r") as f:
-            dataset_dict = json.load(f)
 
-        self.dataset_sizes = [size for _, size in dataset_dict.items()]
-        self.data_files = []
-        for file in os.listdir(train_dir):
-            if file.endswith(".pt"):
-                self.data_files.append(file)
-        self.dataset_size = sum(self.dataset_sizes)
-        logging.info(f"Data split: {self.dataset_sizes}")
-        logging.info(f"Data locations: {self.data_files}")
+        self.data_file = os.path.join(train_dir, f"data_{rank}.pt")
 
         super().__init__(
             rank=rank,
