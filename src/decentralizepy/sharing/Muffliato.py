@@ -28,7 +28,7 @@ class Muffliato(SharingAsymmetric):
         to_send = copy.deepcopy(current_model_data)
 
         if averaging_round == 0:
-            noise = np.random.normal(
+            noise = self.noise_generator.normal(
                 0, self.noise_std, current_model_data["params"].shape
             )  # Generate the model noise
 
@@ -117,3 +117,5 @@ class Muffliato(SharingAsymmetric):
             compression_class=compression_class,
             save_models_for_attacks=save_models_for_attacks,
         )
+        # TODO: This is a bit hacky. Pass a seed parameter properly when needed later.
+        self.noise_generator = np.random.default_rng(seed=self.uid)
