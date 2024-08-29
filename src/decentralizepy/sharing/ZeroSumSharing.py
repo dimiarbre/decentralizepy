@@ -31,7 +31,7 @@ class ZeroSumSharing(SharingAsymmetric):
             std_to_gen = np.sqrt(nb_neighbors / (nb_neighbors - 1)) * self.noise_std
             # std_to_gen = self.noise_std
 
-            noises = np.random.normal(
+            noises = self.noise_generator.normal(
                 0, std_to_gen, (nb_neighbors,) + current_model_data["params"].shape
             )
 
@@ -143,3 +143,5 @@ class ZeroSumSharing(SharingAsymmetric):
             compression_class=compression_class,
             save_models_for_attacks=save_models_for_attacks,
         )
+        # TODO: This is a bit hacky. Pass a seed parameter properly when needed later.
+        self.noise_generator = np.random.default_rng(seed=self.uid)
