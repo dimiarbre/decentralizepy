@@ -164,6 +164,13 @@ class DPSGDNode(Node):
                     "Communication Rounds",
                     os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
                 )
+                self.save_plot(
+                    results_dict["test_loss"],
+                    "test_loss",
+                    "Testing Loss",
+                    "Communication Rounds",
+                    os.path.join(self.log_dir, "{}_test_loss.png".format(self.rank)),
+                )
 
             if self.dataset.__testing__ and (iteration == 0 or rounds_to_test == 0):
                 if iteration != 0:  # We only reset the count after the 1st iteration
