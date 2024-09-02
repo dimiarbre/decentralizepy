@@ -31,7 +31,7 @@ class ZeroSumSharing(SharingAsymmetric):
             std_to_gen = np.sqrt(nb_neighbors / (nb_neighbors - 1)) * self.noise_std
             # std_to_gen = self.noise_std
 
-            noises = np.random.normal(
+            noises = self.noise_generator.normal(
                 0, std_to_gen, (nb_neighbors,) + current_model_data["params"].shape
             )
 
@@ -91,6 +91,7 @@ class ZeroSumSharing(SharingAsymmetric):
         noise_std=0,
         save_models_for_attacks=-1,
         self_noise=False,
+        sharing_seed=421,
     ):
         """
         Constructor
@@ -125,6 +126,8 @@ class ZeroSumSharing(SharingAsymmetric):
             The interval at which a sent model must be logged.
         self_noise: bool, default False
             Whether to also noise the local model or not
+        sharing_seed: int, default 421
+            The seed for the generated noises.
         """
         self.noise_std = noise_std
         self.generated_noise_std = None
@@ -143,3 +146,6 @@ class ZeroSumSharing(SharingAsymmetric):
             compression_class=compression_class,
             save_models_for_attacks=save_models_for_attacks,
         )
+        self.seed = sharing_seed
+        logging.info("Random sharing seed: %s", self.seed)
+        self.noise_generator = np.random.default_rng(seed=self.seed * 1000 + self.uid)
