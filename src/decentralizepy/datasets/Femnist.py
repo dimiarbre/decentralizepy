@@ -634,6 +634,14 @@ class RNET(Model):
                 elif isinstance(m, BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
 
+        logging.info(f"Model : {self}")
+        logging.info(
+            f"Number of trainable parameters: {self.count_params(only_trainable=True)}"
+        )
+        logging.info(
+            f"Number of total parameters: {self.count_params(only_trainable=False)}"
+        )
+
     def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
         norm_layer = self._norm_layer
         downsample = None
