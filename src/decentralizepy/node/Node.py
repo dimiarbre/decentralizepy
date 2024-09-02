@@ -217,6 +217,15 @@ class Node:
 
         self.model_class = getattr(dataset_module, dataset_configs["model_class"])
         self.model = self.model_class()
+        logging.info("Model: %s", self.model)
+        logging.info(
+            "Number of trainable parameters: %s",
+            self.model.count_params(only_trainable=True),
+        )
+        logging.info(
+            "Number of total parameters: %s",
+            self.model.count_params(only_trainable=False),
+        )
 
     def init_optimizer(self, optimizer_configs):
         """

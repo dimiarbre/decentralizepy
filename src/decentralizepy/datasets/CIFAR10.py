@@ -441,13 +441,6 @@ class LeNet(Model):
         self.conv3 = nn.Conv2d(32, 64, 5, padding="same")
         self.gn3 = nn.GroupNorm(2, 64)
         self.fc1 = nn.Linear(64 * 4 * 4, NUM_CLASSES)
-        logging.info(f"Model : {self}")
-        logging.info(
-            f"Number of trainable parameters: {self.count_params(only_trainable=True)}"
-        )
-        logging.info(
-            f"Number of total parameters: {self.count_params(only_trainable=False)}"
-        )
 
     def forward(self, x):
         """
