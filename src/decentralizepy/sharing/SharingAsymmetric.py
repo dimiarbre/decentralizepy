@@ -40,10 +40,10 @@ class SharingAsymmetric(Sharing):
             target (_type_): _description_          #TODO
         """
         if self.save_models_for_attacks > 0:
-            # This is a hack to only log the model of the node 0, used only for S&P rebuttal.
+            # When self.save_all_models is False, only the 1st model on each machine is logged.
             # This means only threshold attack can be performed, and a lot of model will be missing.
-            # It may break attacks anyway.
-            if self.rank != 0:  # TODO: Remove this hack
+            # It may break attacks.
+            if (not self.save_all_models) and (self.rank != 0):
                 return
             # Ensure we are at the right iteration
             if (
@@ -121,6 +121,7 @@ class SharingAsymmetric(Sharing):
         compression_class=None,
         float_precision=None,
         save_models_for_attacks=-1,
+        save_all_models=True,
     ):
         """
         Constructor
@@ -153,9 +154,13 @@ class SharingAsymmetric(Sharing):
 
         save_models_for_attacks: int, default -1
             The interval at which a sent model must be logged.
+        save_all_models: bool, default True
+            Whether to save all models for the attack, or only models for the first of each node.
         """
         self.training_iteration = None
         self.save_models_for_attacks = save_models_for_attacks
+        self.save_all_models = save_all_models
+        logging.info("Logging of all models set to %s", self.save_all_models)
         self.model_save_folder = os.path.join(
             log_dir, f"attacked_model/machine{machine_id}/{rank}/"
         )
