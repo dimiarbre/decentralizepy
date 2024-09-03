@@ -503,6 +503,7 @@ class BasicBlock(nn.Module):
 
 class ResNet8(Model):
     def __init__(self, num_classes=10):
+        # 4,932,344 parameters with current defaults.
         super(ResNet8, self).__init__()
         block = BasicBlock
         num_blocks = [1, 1, 1]

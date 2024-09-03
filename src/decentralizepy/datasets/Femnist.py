@@ -578,6 +578,7 @@ class RNET(Model):
         replace_stride_with_dilation=None,
         norm_layer=None,
     ):
+        # 2,811,678 parameters with current defaults
         super(RNET, self).__init__()
         block = BasicBlock
         layers = [2, 2, 2, 2]
