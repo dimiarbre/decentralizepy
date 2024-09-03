@@ -224,6 +224,17 @@ class Node:
         model_size = f"{self.model.count_params(only_trainable=False):,d}"
         logging.info("Number of total parameters: %s", model_size)
 
+        param_size = 0
+        for param in self.model.parameters():
+            param_size += param.nelement() * param.element_size()
+        buffer_size = 0
+        for buffer in self.model.buffers():
+            buffer_size += buffer.nelement() * buffer.element_size()
+
+        size_all_mb = (param_size + buffer_size) / 1024**2
+        size_all_mb = f"{size_all_mb:.3f}"
+        logging.info("model size: %sMB", size_all_mb)
+
     def init_optimizer(self, optimizer_configs):
         """
         Instantiate optimizer from config.
