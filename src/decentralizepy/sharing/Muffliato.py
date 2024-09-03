@@ -69,6 +69,7 @@ class Muffliato(SharingAsymmetric):
         noise_std=0,
         save_models_for_attacks=-1,
         sharing_seed=421,
+        save_all_models=True,
     ):
         """
         Constructor
@@ -103,6 +104,8 @@ class Muffliato(SharingAsymmetric):
             The interval at which a sent model must be logged.
         sharing_seed: int, default 421
             The seed for the generated noises.
+        save_all_models: bool, default True
+            Whether to save all models for the attack, or only models for the first of each node.
         """
         self.noise_std = noise_std
         self.generated_noise_std = None
@@ -119,6 +122,7 @@ class Muffliato(SharingAsymmetric):
             compression_package=compression_package,
             compression_class=compression_class,
             save_models_for_attacks=save_models_for_attacks,
+            save_all_models=save_all_models,
         )
         self.seed = sharing_seed
         logging.info("Random sharing seed: %s", self.seed)
