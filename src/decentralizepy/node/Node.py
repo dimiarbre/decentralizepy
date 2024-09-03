@@ -217,15 +217,23 @@ class Node:
 
         self.model_class = getattr(dataset_module, dataset_configs["model_class"])
         self.model = self.model_class()
+
         logging.info("Model: %s", self.model)
-        logging.info(
-            "Number of trainable parameters: %s",
-            self.model.count_params(only_trainable=True),
-        )
-        logging.info(
-            "Number of total parameters: %s",
-            self.model.count_params(only_trainable=False),
-        )
+        model_size = f"{self.model.count_params(only_trainable=True):,d}"
+        logging.info("Number of trainable parameters: %s", model_size)
+        model_size = f"{self.model.count_params(only_trainable=False):,d}"
+        logging.info("Number of total parameters: %s", model_size)
+
+        param_size = 0
+        for param in self.model.parameters():
+            param_size += param.nelement() * param.element_size()
+        buffer_size = 0
+        for buffer in self.model.buffers():
+            buffer_size += buffer.nelement() * buffer.element_size()
+
+        size_all_mb = (param_size + buffer_size) / 1024**2
+        size_all_mb = f"{size_all_mb:.3f}"
+        logging.info("model size: %sMB", size_all_mb)
 
     def init_optimizer(self, optimizer_configs):
         """

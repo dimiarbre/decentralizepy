@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 from collections import deque
 
 from decentralizepy.graphs.Graph import Graph
@@ -252,6 +253,7 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
 
             if rounds_to_train_evaluate == 0 or iteration == 0:
                 logging.info("Evaluating on train set.")
+                t0 = time.time()
                 if iteration != 0:  # We only reset the count after the 1st iteration
                     rounds_to_train_evaluate = self.train_evaluate_after * change
                 loss_after_sharing = self.trainer.eval_loss(self.dataset)
@@ -270,12 +272,17 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
                     "Communication Rounds",
                     os.path.join(self.log_dir, "{}_test_loss.png".format(self.rank)),
                 )
+                t1 = time.time()
+                logging.info("Evaluated on train set in %f seconds.", (t1 - t0))
 
             if self.dataset.__testing__ and (rounds_to_test == 0 or iteration == 0):
                 if iteration != 0:  # We only reset the count after the 1st iteration
                     rounds_to_test = self.test_after * change
                 logging.info("Evaluating on test set.")
+                t0 = time.time()
                 ta, tl = self.dataset.test(self.model, self.loss)
+                t1 = time.time()
+                logging.info("Evaluated on test set in %f seconds.", (t1 - t0))
                 results_dict["test_acc"][iteration + 1] = ta
                 results_dict["test_loss"][iteration + 1] = tl
 

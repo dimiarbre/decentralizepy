@@ -162,14 +162,21 @@ class DPSGDNode(Node):
                     "train_loss",
                     "Training Loss",
                     "Communication Rounds",
-                    os.path.join(self.log_dir, "{}_train_loss.png".format(self.rank)),
+                    os.path.join(self.log_dir, f"{self.rank}_train_loss.png"),
                 )
                 self.save_plot(
                     results_dict["test_loss"],
                     "test_loss",
                     "Testing Loss",
                     "Communication Rounds",
-                    os.path.join(self.log_dir, "{}_test_loss.png".format(self.rank)),
+                    os.path.join(self.log_dir, f"{self.rank}_test_loss.png"),
+                )
+                self.save_plot(
+                    results_dict["test_acc"],
+                    "test_acc",
+                    "Testing Accuracy",
+                    "Communication Rounds",
+                    os.path.join(self.log_dir, f"{self.rank}_test_acc.png"),
                 )
 
             if self.dataset.__testing__ and (iteration == 0 or rounds_to_test == 0):
