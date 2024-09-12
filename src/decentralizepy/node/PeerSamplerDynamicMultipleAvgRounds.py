@@ -16,7 +16,9 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
 
     def get_neighbors(self, node, iteration=None, averaging_round=0):
         # logging.debug(f"Node : {node}, {iteration}, {averaging_round} ")
-        if self.static_avgrounds:
+        if (
+            not self.dynamic_avgrounds
+        ):  # We only want the same graph, super() already handles the job, but not the API
             return super().get_neighbors(node, iteration=iteration)
         if iteration is not None:
             current_seed = (
@@ -80,10 +82,10 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         logging.info("Saving graphs:")
         graph_log_dir = f"{self.log_dir}/graphs/"
         os.mkdir(graph_log_dir)
-        if self.static_avgrounds:  # If we have dynamicity only between GD
+        if not self.dynamic_avgrounds:  # If we have dynamicity only between GD
             for iteration, graph in enumerate(self.graphs):
                 graph.write_graph_to_file(f"{graph_log_dir}{iteration}")
-        else:  # When we randomize each graph
+        else:  # When we randomize each graph between averaging rounds.
             for iteration, iteration_graph_list in enumerate(self.graphs_lists):
                 for averaging_round, graph in enumerate(iteration_graph_list):
                     graph.write_graph_to_file(
@@ -102,7 +104,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         averaging_rounds=1,
         log_dir=".",
         log_level=logging.INFO,
-        static_avgrounds=True,
+        dynamic_avgrounds=False,
         *args,
     ):
         """
@@ -138,6 +140,9 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
             Logging directory
         log_level : logging.Level
             One of DEBUG, INFO, WARNING, ERROR, CRITICAL
+        dynamic_avgrounds : bool, default False
+            If true, randomize between each averaging round, if False randomize the graph only
+            between gradient descent steps.
         args : optional
             Other arguments
 
@@ -146,8 +151,8 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         self.iteration = -1
         self.averaging_round = 0
 
-        self.static_avgrounds = static_avgrounds
-        logging.debug("static_avgrounds set to %s", self.static_avgrounds)
+        self.dynamic_avgrounds = dynamic_avgrounds
+        logging.debug("dynamic_avgrounds set to %s", self.dynamic_avgrounds)
 
         self.total_averaging_rounds = averaging_rounds
 
