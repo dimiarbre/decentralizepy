@@ -84,7 +84,7 @@ class PeerSamplerDynamic(PeerSampler):
         """
 
         self.iteration = -1
-        self.graphs = []
+        self.graphs: list[Graph] = []
 
         nodeConfigs = config["NODE"]
         self.graph_degree = nodeConfigs["graph_degree"]
