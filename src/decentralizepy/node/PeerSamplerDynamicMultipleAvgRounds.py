@@ -16,6 +16,8 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
 
     def get_neighbors(self, node, iteration=None, averaging_round=0):
         # logging.debug(f"Node : {node}, {iteration}, {averaging_round} ")
+        if self.static_avgrounds:
+            return super().get_neighbors(node, iteration=iteration)
         if iteration is not None:
             current_seed = (
                 self.random_seed * 100000 + 10000000 * iteration + averaging_round
@@ -78,9 +80,11 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         logging.info("Saving graphs:")
         graph_log_dir = f"{self.log_dir}/graphs/"
         os.mkdir(graph_log_dir)
-        for iteration,iteration_graph_list in enumerate(self.graphs):
+        for iteration, iteration_graph_list in enumerate(self.graphs):
             for averaging_round, graph in enumerate(iteration_graph_list):
-                graph.write_graph_to_file(f"{graph_log_dir}{iteration}_{averaging_round}")
+                graph.write_graph_to_file(
+                    f"{graph_log_dir}{iteration}_{averaging_round}"
+                )
         logging.info("Saved graphs")
 
     def __init__(
@@ -94,6 +98,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         averaging_rounds=1,
         log_dir=".",
         log_level=logging.INFO,
+        static_avgrounds=True,
         *args,
     ):
         """
@@ -137,6 +142,9 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         self.iteration = -1
         self.averaging_round = 0
 
+        self.static_avgrounds = static_avgrounds
+        logging.debug("static_avgrounds set to %s", self.static_avgrounds)
+
         self.total_averaging_rounds = averaging_rounds
 
         self.graphs = []
@@ -153,7 +161,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
             iterations=iterations,
             log_dir=log_dir,
             log_level=log_level,
-            *args,
+            # *args,
         )
 
         self.run()
