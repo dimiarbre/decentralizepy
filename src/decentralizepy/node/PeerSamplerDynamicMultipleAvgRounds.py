@@ -34,7 +34,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
                 self.iteration = iteration
                 self.averaging_round = 0
                 # logging.debug(f"n_procs : {self.graph.n_procs}, degree :{self.graph_degree}")
-                self.graphs.append(
+                self.graphs_lists.append(
                     [Regular(self.graph.n_procs, self.graph_degree, seed=current_seed)]
                 )
             elif iteration == self.iteration and averaging_round > self.averaging_round:
@@ -46,11 +46,11 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
                     averaging_round == self.averaging_round + 1
                 ), f"Expected to be averaging round {self.averaging_round + 1}, got {averaging_round}"
                 self.averaging_round = averaging_round
-                self.graphs[iteration].append(
+                self.graphs_lists[iteration].append(
                     Regular(self.graph.n_procs, self.graph_degree, seed=current_seed)
                 )
 
-            return self.graphs[iteration][averaging_round].neighbors(node)
+            return self.graphs_lists[iteration][averaging_round].neighbors(node)
         else:
             return self.graph.neighbors(node)
 
@@ -80,7 +80,7 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         logging.info("Saving graphs:")
         graph_log_dir = f"{self.log_dir}/graphs/"
         os.mkdir(graph_log_dir)
-        for iteration, iteration_graph_list in enumerate(self.graphs):
+        for iteration, iteration_graph_list in enumerate(self.graphs_lists):
             for averaging_round, graph in enumerate(iteration_graph_list):
                 graph.write_graph_to_file(
                     f"{graph_log_dir}{iteration}_{averaging_round}"
@@ -147,7 +147,8 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
 
         self.total_averaging_rounds = averaging_rounds
 
-        self.graphs = []
+        self.graphs: list[Graph] = []
+        self.graphs_lists: list[list[Graph]] = []
 
         node_configs = config["NODE"]
         self.graph_degree = node_configs["graph_degree"]
