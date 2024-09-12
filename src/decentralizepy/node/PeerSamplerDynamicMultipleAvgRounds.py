@@ -80,11 +80,15 @@ class PeerSamplerDynamicMultipleAvgRounds(PeerSamplerDynamic):
         logging.info("Saving graphs:")
         graph_log_dir = f"{self.log_dir}/graphs/"
         os.mkdir(graph_log_dir)
-        for iteration, iteration_graph_list in enumerate(self.graphs_lists):
-            for averaging_round, graph in enumerate(iteration_graph_list):
-                graph.write_graph_to_file(
-                    f"{graph_log_dir}{iteration}_{averaging_round}"
-                )
+        if self.static_avgrounds:  # If we have dynamicity only between GD
+            for iteration, graph in enumerate(self.graphs):
+                graph.write_graph_to_file(f"{graph_log_dir}{iteration}")
+        else:  # When we randomize each graph
+            for iteration, iteration_graph_list in enumerate(self.graphs_lists):
+                for averaging_round, graph in enumerate(iteration_graph_list):
+                    graph.write_graph_to_file(
+                        f"{graph_log_dir}{iteration}_{averaging_round}"
+                    )
         logging.info("Saved graphs")
 
     def __init__(
