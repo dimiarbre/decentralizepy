@@ -93,6 +93,7 @@ class ZeroSumSharing(SharingAsymmetric):
         self_noise=False,
         sharing_seed=421,
         save_all_models=True,
+        nb_models_to_save=1,
     ):
         """
         Constructor
@@ -131,6 +132,8 @@ class ZeroSumSharing(SharingAsymmetric):
             The seed for the generated noises.
         save_all_models: bool, default True
             Whether to save all models for the attack, or only models for the first of each node.
+        nb_models_to_save: int, default 1
+            How many nodes' outgoing models are to be saved. Requires `save_all_models` to be False.
         """
         self.noise_std = noise_std
         self.generated_noise_std = None
@@ -149,6 +152,7 @@ class ZeroSumSharing(SharingAsymmetric):
             compression_class=compression_class,
             save_models_for_attacks=save_models_for_attacks,
             save_all_models=save_all_models,
+            nb_models_to_save=nb_models_to_save,
         )
         self.seed = sharing_seed
         logging.info("Random sharing seed: %s", self.seed)

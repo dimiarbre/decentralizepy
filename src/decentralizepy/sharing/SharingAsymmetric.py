@@ -40,10 +40,13 @@ class SharingAsymmetric(Sharing):
             target (_type_): _description_          #TODO
         """
         if self.save_models_for_attacks > 0:
-            # When self.save_all_models is False, only the 1st model on each machine is logged.
-            # This means only threshold attack can be performed, and a lot of model will be missing.
-            # It may break attacks.
-            if (not self.save_all_models) and (self.rank != 0):
+            assert (
+                self.training_iteration is not None
+            ), "SharingAssymetric's training iteration is None, when it should be an int."
+            # When self.save_all_models is False, only the first `self.nb_models_to_save` models are saved on each machine.
+            # This means only threshold/classifier attack can be performed, and models will be missing.
+            # It may break attacks (in particular linkability).
+            if (not self.save_all_models) and (self.uid >= self.nb_models_to_save):
                 return
             # Ensure we are at the right iteration
             if (
@@ -122,6 +125,7 @@ class SharingAsymmetric(Sharing):
         float_precision=None,
         save_models_for_attacks=-1,
         save_all_models=True,
+        nb_models_to_save=1,
     ):
         """
         Constructor
@@ -156,11 +160,18 @@ class SharingAsymmetric(Sharing):
             The interval at which a sent model must be logged.
         save_all_models: bool, default True
             Whether to save all models for the attack, or only models for the first of each node.
+        nb_models_to_save: int, default 1
+            How many nodes' outgoing models are to be saved. Requires `save_all_models` to be False.
         """
         self.training_iteration = None
         self.save_models_for_attacks = save_models_for_attacks
         self.save_all_models = save_all_models
-        logging.info("Logging of all models set to %s", self.save_all_models)
+        self.nb_models_to_save = nb_models_to_save
+        logging.info(
+            "Logging of all models set to %s - nb_models_to_save set to %s",
+            self.save_all_models,
+            self.nb_models_to_save,
+        )
         self.model_save_folder = os.path.join(
             log_dir, f"attacked_model/machine{machine_id}/{rank}/"
         )
