@@ -74,7 +74,7 @@ class MovieLens(Dataset):
 
         # [0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
         # [0,   1,   2,   3,   4,   5,   6,   7,   8,   9  ]
-        self.NUM_CLASSES = 10
+        self.num_classes = 10
         self.RATING_DICT = {
             0.5: 0,
             1.0: 1,
@@ -87,6 +87,22 @@ class MovieLens(Dataset):
             4.5: 8,
             5.0: 9,
         }
+
+        label_distribution = self.get_label_distribution()
+        logging.info(f"Local training data: {sum(label_distribution):,} elements.")
+        logging.info(f"Local dqataset label distribution: {label_distribution}")
+
+    def get_label_distribution(self):
+        # Only supported for classification
+        if self.label_distribution is None:
+            self.label_distribution = [0 for _ in range(self.num_classes)]
+            tr_set = self.get_trainset()
+            for _, ys in tr_set:
+                for y in ys:
+                    y_val = y.item()
+                    self.label_distribution[self.RATING_DICT[y_val]] += 1
+
+        return self.label_distribution
 
     def _load_data(self):
         f_ratings = os.path.join(self.train_dir, "ml-latest-small", "ratings.csv")
@@ -179,8 +195,8 @@ class MovieLens(Dataset):
         test_set = self.get_testset()
         logging.debug("Test Loader instantiated.")
 
-        correct_pred = [0 for _ in range(self.NUM_CLASSES)]
-        total_pred = [0 for _ in range(self.NUM_CLASSES)]
+        correct_pred = [0 for _ in range(self.num_classes)]
+        total_pred = [0 for _ in range(self.num_classes)]
         total_correct = 0
         total_predicted = 0
 
