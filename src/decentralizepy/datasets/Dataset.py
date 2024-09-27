@@ -70,7 +70,7 @@ class Dataset:
         self.test_dir = utils.conditional_value(test_dir, "", None)
         self.sizes = utils.conditional_value(sizes, "", None)
         self.test_batch_size = utils.conditional_value(test_batch_size, "", 64)
-        self.num_classes = None
+        self.num_classes = 0
         self.validation_size = utils.conditional_value(validation_size, "", None)
         self.validation_source = utils.conditional_value(validation_source, "", None)
 
