@@ -15,6 +15,59 @@ from decentralizepy.mappings import Mapping
 from decentralizepy.models.Model import Model
 
 
+def load_data(train_dir, random_seed):
+    f_ratings = os.path.join(train_dir, "ml-latest-small", "ratings.csv")
+    names = ["user_id", "item_id", "rating", "timestamp"]
+    df_ratings = pd.read_csv(f_ratings, sep=",", names=names, skiprows=1).drop(
+        columns=["timestamp"]
+    )
+    # map item_id properly
+    items_count = df_ratings["item_id"].nunique()
+    items_ids = sorted(list(df_ratings["item_id"].unique()))
+    assert items_count == len(items_ids)
+    for i in range(0, items_count):
+        df_ratings.loc[df_ratings["item_id"] == items_ids[i], "item_id"] = i + 1
+
+    # split train, test - 70% : 30%
+    grouped_users = df_ratings.groupby(["user_id"])
+    users_count = len(grouped_users)
+    df_train = pd.DataFrame()
+    df_test = pd.DataFrame()
+    for i in range(0, users_count):
+        df_user = df_ratings[df_ratings["user_id"] == i + 1]
+        df_user_train = df_user.sample(frac=0.7, random_state=random_seed)
+        df_user_test = pd.concat([df_user, df_user_train]).drop_duplicates(keep=False)
+        assert len(df_user_train) + len(df_user_test) == len(df_user)
+
+        df_train = pd.concat([df_train, df_user_train])
+        df_test = pd.concat([df_test, df_user_test])
+
+    # 610, 9724
+    return users_count, items_count, df_train, df_test
+
+
+def split_data(train_data, test_data, n_users, world_size, dataset_id):
+    # SPLITTING BY USERS: group by users and split the data accordingly
+    mod = n_users % world_size
+    users_count = n_users // world_size
+    if dataset_id < mod:
+        users_count += 1
+        offset = users_count * dataset_id
+    else:
+        offset = users_count * dataset_id + mod
+
+    my_train_data = pd.DataFrame()
+    my_test_data = pd.DataFrame()
+    for i in range(offset, offset + users_count):
+        my_train_data = pd.concat(
+            [my_train_data, train_data[train_data["user_id"] == i + 1]]
+        )
+        my_test_data = pd.concat(
+            [my_test_data, test_data[test_data["user_id"] == i + 1]]
+        )
+    return my_train_data, my_test_data
+
+
 class MovieLens(Dataset):
     def __init__(
         self,
@@ -105,57 +158,16 @@ class MovieLens(Dataset):
         return self.label_distribution
 
     def _load_data(self):
-        f_ratings = os.path.join(self.train_dir, "ml-latest-small", "ratings.csv")
-        names = ["user_id", "item_id", "rating", "timestamp"]
-        df_ratings = pd.read_csv(f_ratings, sep=",", names=names, skiprows=1).drop(
-            columns=["timestamp"]
-        )
-        # map item_id properly
-        items_count = df_ratings["item_id"].nunique()
-        items_ids = sorted(list(df_ratings["item_id"].unique()))
-        assert items_count == len(items_ids)
-        for i in range(0, items_count):
-            df_ratings.loc[df_ratings["item_id"] == items_ids[i], "item_id"] = i + 1
-
-        # split train, test - 70% : 30%
-        grouped_users = df_ratings.groupby(["user_id"])
-        users_count = len(grouped_users)
-        df_train = pd.DataFrame()
-        df_test = pd.DataFrame()
-        for i in range(0, users_count):
-            df_user = df_ratings[df_ratings["user_id"] == i + 1]
-            df_user_train = df_user.sample(frac=0.7, random_state=self.random_seed)
-            df_user_test = pd.concat([df_user, df_user_train]).drop_duplicates(
-                keep=False
-            )
-            assert len(df_user_train) + len(df_user_test) == len(df_user)
-
-            df_train = pd.concat([df_train, df_user_train])
-            df_test = pd.concat([df_test, df_user_test])
-
-        # 610, 9724
-        return users_count, items_count, df_train, df_test
+        return load_data(train_dir=self.train_dir, random_seed=self.random_seed)
 
     def _split_data(self, train_data, test_data, world_size):
-        # SPLITTING BY USERS: group by users and split the data accordingly
-        mod = self.n_users % world_size
-        users_count = self.n_users // world_size
-        if self.dataset_id < mod:
-            users_count += 1
-            offset = users_count * self.dataset_id
-        else:
-            offset = users_count * self.dataset_id + mod
-
-        my_train_data = pd.DataFrame()
-        my_test_data = pd.DataFrame()
-        for i in range(offset, offset + users_count):
-            my_train_data = pd.concat(
-                [my_train_data, train_data[train_data["user_id"] == i + 1]]
-            )
-            my_test_data = pd.concat(
-                [my_test_data, test_data[test_data["user_id"] == i + 1]]
-            )
-
+        my_train_data, my_test_data = split_data(
+            train_data=train_data,
+            test_data=test_data,
+            world_size=world_size,
+            n_users=self.n_users,
+            dataset_id=self.dataset_id,
+        )
         logging.info("Data split for test and train.")
         return my_train_data, my_test_data
 
