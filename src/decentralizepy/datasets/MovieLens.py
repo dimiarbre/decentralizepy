@@ -144,6 +144,7 @@ class MovieLens(Dataset):
         label_distribution = self.get_label_distribution()
         logging.info(f"Local training data: {sum(label_distribution):,} elements.")
         logging.info(f"Local dataset label distribution: {label_distribution}")
+        logging.info(f"Random seed: {self.random_seed}")
 
     def get_label_distribution(self):
         # Only supported for classification
