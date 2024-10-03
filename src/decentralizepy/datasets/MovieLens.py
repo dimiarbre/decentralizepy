@@ -290,8 +290,8 @@ class MatrixFactorization(Model):
         """
         Forward pass of the model, it does matrix multiplication and returns predictions for given users and items.
         """
-        users = data[:, 0] - 1
-        items = data[:, 1] - 1
+        users = data[:, 0].long() - 1
+        items = data[:, 1].long() - 1
         # logging.debug("User dtype: %s", users.dtype)
         # logging.debug("items dtype: %s", items.dtype)
         u, it = self.user_factors(users), self.item_factors(items)
