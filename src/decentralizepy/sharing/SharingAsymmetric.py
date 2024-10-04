@@ -163,6 +163,21 @@ class SharingAsymmetric(Sharing):
         nb_models_to_save: int, default 1
             How many nodes' outgoing models are to be saved. Requires `save_all_models` to be False.
         """
+        super().__init__(
+            rank=rank,
+            machine_id=machine_id,
+            communication=communication,
+            mapping=mapping,
+            graph=graph,
+            model=model,
+            dataset=dataset,
+            log_dir=log_dir,
+            compress=compress,
+            compression_package=compression_package,
+            compression_class=compression_class,
+            float_precision=float_precision,
+        )
+
         self.training_iteration = None
         self.save_models_for_attacks = save_models_for_attacks
         self.save_all_models = save_all_models
@@ -184,18 +199,3 @@ class SharingAsymmetric(Sharing):
                 logging.warning(
                     "The directory %s already exists", self.model_save_folder
                 )
-
-        super().__init__(
-            rank=rank,
-            machine_id=machine_id,
-            communication=communication,
-            mapping=mapping,
-            graph=graph,
-            model=model,
-            dataset=dataset,
-            log_dir=log_dir,
-            compress=compress,
-            compression_package=compression_package,
-            compression_class=compression_class,
-            float_precision=float_precision,
-        )
