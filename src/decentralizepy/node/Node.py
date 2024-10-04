@@ -2,6 +2,7 @@ import importlib
 import logging
 import math
 import os
+import sys
 from collections import deque
 
 import numpy as np
@@ -147,6 +148,9 @@ class Node:
             level=log_level,
             force=force,
         )
+        # To be able to follow what happens in the terminal. Mostly for debugging purposes, maybe to remove
+        if rank == 0 and log_level == logging.DEBUG:
+            logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     def cache_fields(
         self,
@@ -219,10 +223,11 @@ class Node:
         self.model = self.model_class()
 
         logging.info("Model: %s", self.model)
-        model_size = f"{self.model.count_params(only_trainable=True):,d}"
-        logging.info("Number of trainable parameters: %s", model_size)
-        model_size = f"{self.model.count_params(only_trainable=False):,d}"
-        logging.info("Number of total parameters: %s", model_size)
+        if hasattr(self.model, "count_params"):
+            model_size = f"{self.model.count_params(only_trainable=True):,d}"
+            logging.info("Number of trainable parameters: %s", model_size)
+            model_size = f"{self.model.count_params(only_trainable=False):,d}"
+            logging.info("Number of total parameters: %s", model_size)
 
         param_size = 0
         for param in self.model.parameters():
@@ -296,7 +301,7 @@ class Node:
             self.optimizer,
             self.loss,
             self.log_dir,
-            **train_params
+            **train_params,
         )
 
     def init_comm(self, comm_configs):
@@ -341,7 +346,7 @@ class Node:
             self.model,
             self.dataset,
             self.log_dir,
-            **sharing_params
+            **sharing_params,
         )
 
     def instantiate(
@@ -354,7 +359,7 @@ class Node:
         iterations=1,
         log_dir=".",
         log_level=logging.INFO,
-        *args
+        *args,
     ):
         """
         Construct objects.
@@ -422,7 +427,7 @@ class Node:
         iterations=1,
         log_dir=".",
         log_level=logging.INFO,
-        *args
+        *args,
     ):
         """
         Constructor

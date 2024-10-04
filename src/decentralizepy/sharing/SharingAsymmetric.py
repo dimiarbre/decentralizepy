@@ -175,10 +175,15 @@ class SharingAsymmetric(Sharing):
         self.model_save_folder = os.path.join(
             log_dir, f"attacked_model/machine{machine_id}/{rank}/"
         )
-        if not os.path.exists(self.model_save_folder):
-            os.makedirs(self.model_save_folder)
-        else:
-            logging.warning(f"The directory {self.model_save_folder} already exists")
+
+        # Only create the folder if the model will be logged.
+        if self.save_all_models or self.uid < self.nb_models_to_save:
+            if not os.path.exists(self.model_save_folder):
+                os.makedirs(self.model_save_folder)
+            else:
+                logging.warning(
+                    "The directory %s already exists", self.model_save_folder
+                )
 
         super().__init__(
             rank=rank,
