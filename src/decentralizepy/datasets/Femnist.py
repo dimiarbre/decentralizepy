@@ -696,3 +696,33 @@ class RNET(Model):
 
     def forward(self, x):
         return self._forward_impl(x)
+
+
+class AdaptedGroupNorm(nn.Module):
+    # Using the same parameters as https://arxiv.org/pdf/1803.08494
+    def __init__(self, num_channels):
+        super(AdaptedGroupNorm, self).__init__()
+        self.norm = nn.GroupNorm(num_groups=32, num_channels=num_channels)
+
+    def forward(self, x):
+        x = self.norm(x)
+        return x
+
+
+class GN_RNET(RNET):
+    def __init__(
+        self,
+        num_classes=NUM_CLASSES,
+        zero_init_residual=False,
+        groups=1,
+        width_per_group=32,
+        replace_stride_with_dilation=None,
+    ):
+        super().__init__(
+            num_classes,
+            zero_init_residual,
+            groups,
+            width_per_group,
+            replace_stride_with_dilation,
+            AdaptedGroupNorm,
+        )

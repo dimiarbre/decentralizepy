@@ -1,5 +1,8 @@
+from torch.nn.modules import Module
+
 from decentralizepy import utils
 from decentralizepy.mappings.Mapping import Mapping
+from decentralizepy.models.Model import Model
 
 
 class Dataset:
@@ -151,6 +154,24 @@ class Dataset:
         ------
         RuntimeError
             If the test set was not initialized
+
+        """
+        raise NotImplementedError
+
+    def test(self, model: Model, loss: Module) -> tuple[float, float]:
+        """
+        Function to evaluate model on the test dataset.
+
+        Parameters
+        ----------
+        model : decentralizepy.models.Model
+            Model to evaluate
+        loss : torch.nn.loss
+            Loss function to use
+
+        Returns
+        -------
+        tuple(float, float)
 
         """
         raise NotImplementedError

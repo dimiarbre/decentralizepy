@@ -3,6 +3,10 @@ import logging
 
 import torch
 
+from decentralizepy.communication.Communication import Communication
+from decentralizepy.datasets.Dataset import Dataset
+from decentralizepy.models.Model import Model
+
 
 class Sharing:
     """
@@ -14,11 +18,11 @@ class Sharing:
         self,
         rank,
         machine_id,
-        communication,
+        communication: Communication,
         mapping,
         graph,
-        model,
-        dataset,
+        model: Model,
+        dataset: Dataset,
         log_dir,
         compress=False,
         compression_package=None,
