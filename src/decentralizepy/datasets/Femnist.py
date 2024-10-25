@@ -14,7 +14,12 @@ from decentralizepy.datasets.Dataset import Dataset
 from decentralizepy.datasets.Partitioner import DataPartitioner
 from decentralizepy.mappings.Mapping import Mapping
 from decentralizepy.models.Model import Model
-from decentralizepy.models.Resnet import BasicBlock, Bottleneck, conv1x1
+from decentralizepy.models.Resnet import (
+    AdaptedGroupNorm,
+    BasicBlock,
+    Bottleneck,
+    conv1x1,
+)
 
 NUM_CLASSES = 62
 IMAGE_SIZE = (28, 28)
@@ -385,6 +390,16 @@ class Femnist(Dataset):
 
         """
         model.eval()
+
+        # Code snippet to go in depth, to check which layer raises NaNs.
+        # def monitor_activations(layer, input, output):
+        #     if torch.isnan(output).any():
+        #         logging.error(f"NaN in {layer}")
+        #     if torch.isinf(output).any():
+        #         logging.error(f"Inf in {layer}")
+
+        # for layer in model.modules():
+        #     layer.register_forward_hook(monitor_activations)
         testloader = self.get_testset()
 
         logging.debug("Test Loader instantiated.")
@@ -400,7 +415,12 @@ class Femnist(Dataset):
             count = 0
             for elems, labels in testloader:
                 outputs = model(elems)
-                loss_val += loss(outputs, labels).item()
+                loss_element = loss(outputs, labels)
+                if torch.isnan(loss_element):
+                    logging.error("Nan element found in the loss!")
+                else:
+                    logging.debug("No NaN in the loss of current batch.")
+                loss_val += loss_element.item()
                 count += 1
                 _, predictions = torch.max(outputs, 1)
                 for label, prediction in zip(labels, predictions):
@@ -423,6 +443,7 @@ class Femnist(Dataset):
         accuracy = 100 * float(total_correct) / total_predicted
         loss_val = loss_val / count
         logging.info("Overall accuracy is: {:.1f} %".format(accuracy))
+        logging.debug("Overall loss is %s", loss_val)
         return accuracy, loss_val
 
     def validate(self, model, loss):
@@ -633,7 +654,7 @@ class RNET(Model):
                 if isinstance(m, Bottleneck):
                     nn.init.constant_(m.bn3.weight, 0)
                 elif isinstance(m, BasicBlock):
-                    nn.init.constant_(m.bn2.weight, 0)
+                    nn.init.constant_(m.norm2.weight, 0)
 
     def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
         norm_layer = self._norm_layer
@@ -696,17 +717,6 @@ class RNET(Model):
 
     def forward(self, x):
         return self._forward_impl(x)
-
-
-class AdaptedGroupNorm(nn.Module):
-    # Using the same parameters as https://arxiv.org/pdf/1803.08494
-    def __init__(self, num_channels):
-        super(AdaptedGroupNorm, self).__init__()
-        self.norm = nn.GroupNorm(num_groups=32, num_channels=num_channels)
-
-    def forward(self, x):
-        x = self.norm(x)
-        return x
 
 
 class GN_RNET(RNET):

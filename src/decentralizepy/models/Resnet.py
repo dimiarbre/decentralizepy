@@ -71,6 +71,7 @@
     ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
     POSSIBILITY OF SUCH DAMAGE.
 """
+
 from torch import nn
 
 # Copied and modified from https://github.com/pytorch/pytorch/blob/75024e228ca441290b6a1c2e564300ad507d7af6/benchmarks/functional_autograd_benchmark/torchvision_models.py
@@ -116,10 +117,10 @@ class BasicBlock(nn.Module):
             raise NotImplementedError("Dilation > 1 not supported in BasicBlock")
         # Both self.conv1 and self.downsample layers downsample the input when stride != 1
         self.conv1 = conv3x3(inplanes, planes, stride)
-        self.bn1 = norm_layer(planes)
+        self.norm1 = norm_layer(planes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes)
-        self.bn2 = norm_layer(planes)
+        self.norm2 = norm_layer(planes)
         self.downsample = downsample
         self.stride = stride
 
@@ -127,11 +128,11 @@ class BasicBlock(nn.Module):
         identity = x
 
         out = self.conv1(x)
-        out = self.bn1(out)
+        out = self.norm1(out)
         out = self.relu(out)
 
         out = self.conv2(out)
-        out = self.bn2(out)
+        out = self.norm2(out)
 
         if self.downsample is not None:
             identity = self.downsample(x)
@@ -140,6 +141,18 @@ class BasicBlock(nn.Module):
         out = self.relu(out)
 
         return out
+
+
+class AdaptedGroupNorm(nn.Module):
+    # Using the same parameters as https://arxiv.org/pdf/1803.08494
+    # The aim is to replace BatchNorm layers by GroupNorm layers in ResNet
+    def __init__(self, num_channels):
+        super(AdaptedGroupNorm, self).__init__()
+        self.norm = nn.GroupNorm(num_groups=32, num_channels=num_channels)
+
+    def forward(self, x):
+        x = self.norm(x)
+        return x
 
 
 class Bottleneck(nn.Module):
