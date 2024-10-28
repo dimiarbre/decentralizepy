@@ -476,11 +476,11 @@ class BasicBlock(nn.Module):
         self.conv1 = nn.Conv2d(
             in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
         )
-        self.bn1 = norm_layer(planes)
+        self.norm1 = norm_layer(planes)
         self.conv2 = nn.Conv2d(
             planes, planes, kernel_size=3, stride=1, padding=1, bias=False
         )
-        self.bn2 = norm_layer(planes)
+        self.norm2 = norm_layer(planes)
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != self.expansion * planes:
@@ -496,8 +496,8 @@ class BasicBlock(nn.Module):
             )
 
     def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
+        out = F.relu(self.norm1(self.conv1(x)))
+        out = self.norm2(self.conv2(out))
         out += self.shortcut(x)
         out = F.relu(out)
         return out
@@ -574,13 +574,12 @@ class ResNet(Model):
             norm_layer = nn.BatchNorm2d
         self._norm_layer = norm_layer
         self.in_planes = 64
-        self.pool_size = 8
+        self.pool_size = 1
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.norm1 = norm_layer(self.in_planes)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
@@ -605,7 +604,6 @@ class ResNet(Model):
         out = self.conv1(x)
         out = self.norm1(out)
         out = F.relu(out)
-        out = self.maxpool(out)
 
         out = self.layer1(out)
         out = self.layer2(out)
