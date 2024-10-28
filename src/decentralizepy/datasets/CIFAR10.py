@@ -574,7 +574,7 @@ class ResNet(Model):
             norm_layer = nn.BatchNorm2d
         self._norm_layer = norm_layer
         self.in_planes = 64
-        self.pool_size = 1
+        self.pool_size = 2
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
 
