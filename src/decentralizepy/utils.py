@@ -1,7 +1,9 @@
 import argparse
 import datetime
 import json
+import logging
 import os
+import traceback
 
 
 def conditional_value(var, nul, default):
@@ -138,3 +140,16 @@ def identity(obj):
         The same object
     """
     return obj
+
+
+def error_logging_wrapper(f):
+    def wrapper(*args):
+        try:
+            res = f(*args)
+            return res
+        except Exception:
+            full_traceback = traceback.format_exc()
+            logging.error("Got exception!\n%s", full_traceback, stacklevel=1)
+            raise
+
+    return wrapper

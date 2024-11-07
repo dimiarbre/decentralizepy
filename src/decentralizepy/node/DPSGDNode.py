@@ -12,6 +12,7 @@ from decentralizepy import utils
 from decentralizepy.graphs.Graph import Graph
 from decentralizepy.mappings.Mapping import Mapping
 from decentralizepy.node.Node import Node
+from decentralizepy.utils import error_logging_wrapper
 
 
 class DPSGDNode(Node):
@@ -54,6 +55,7 @@ class DPSGDNode(Node):
         logging.info(f"Received Model from {sender} of iteration {data['iteration']}")
         return sender, data
 
+    @error_logging_wrapper
     def run(self):
         """
         Start the decentralized learning

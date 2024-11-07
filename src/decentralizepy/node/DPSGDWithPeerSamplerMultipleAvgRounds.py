@@ -7,6 +7,7 @@ from collections import deque
 from decentralizepy.graphs.Graph import Graph
 from decentralizepy.mappings.Mapping import Mapping
 from decentralizepy.node.DPSGDWithPeerSampler import DPSGDWithPeerSampler
+from decentralizepy.utils import error_logging_wrapper
 
 
 class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
@@ -155,6 +156,7 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
 
         # self.run()
 
+    @error_logging_wrapper
     def run(self):
         """
         Start the decentralized learning
