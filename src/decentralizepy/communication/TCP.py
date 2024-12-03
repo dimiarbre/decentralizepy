@@ -232,4 +232,4 @@ class TCP(Communication):
         id = str(uid).encode()
         self.peer_sockets[id].send(to_send)
         logging.debug("{} sent the message to {}.".format(self.uid, uid))
-        logging.debug("Sent message size: {}".format(data_size))
+        logging.debug("Sent message size: {}MB.".format(data_size / 1e6))
