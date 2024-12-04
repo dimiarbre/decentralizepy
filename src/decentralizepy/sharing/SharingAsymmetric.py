@@ -28,7 +28,7 @@ class SharingAsymmetric(Sharing):
 
         for i, neighbor in enumerate(neighbors):
             self.communication.send(neighbor, to_send)
-            if i == 0:
+            if i == 0 and averaging_round == 0:
                 # We save one of the sent model
                 self.check_and_save_sent_model(to_send["params"], neighbor)
 
