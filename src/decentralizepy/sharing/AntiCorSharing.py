@@ -7,7 +7,7 @@ import numpy as np
 from decentralizepy.sharing.SharingAsymmetric import SharingAsymmetric
 
 
-class AntiPGD(SharingAsymmetric):
+class AntiCorSharing(SharingAsymmetric):
     """
     API defining who to share with and what, and what to do on receiving
 
