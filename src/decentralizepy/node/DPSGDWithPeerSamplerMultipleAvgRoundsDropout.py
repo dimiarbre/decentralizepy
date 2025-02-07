@@ -1,45 +1,40 @@
 import json
 import logging
+import math
 import os
+import random
 import time
 from collections import deque
+from logging import INFO
+
+import torch
 
 from decentralizepy.graphs.Graph import Graph
 from decentralizepy.mappings.Mapping import Mapping
-from decentralizepy.node.DPSGDWithPeerSampler import DPSGDWithPeerSampler
+from decentralizepy.node.DPSGDWithPeerSamplerMultipleAvgRounds import (
+    DPSGDWithPeerSamplerMultipleAvgRounds,
+)
+from decentralizepy.sharing.SharingAsymmetric import SharingAsymmetric
 from decentralizepy.utils import error_logging_wrapper
 
 
-class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
-    """
-    This class defines the node for DPSGD that performs multiple averaging rounds
+class DPSGDWithPeerSamplerMultipleAvgRoundsDropout(
+    DPSGDWithPeerSamplerMultipleAvgRounds
+):
+    def participate(self):
+        """
+        Participate in the current round
 
-    """
+        """
 
-    def receive_DPSGD(self):
-        sender, data = self.receive_channel("DPSGD")
-        logging.debug("Complete message received: %s", data)
-        logging.info(
-            f"Received Model from {sender} of iteration {data['iteration']} and round {data['averaging_round']}"
-        )
-        return sender, data
+        if self.dropped_last_round:
+            to_crash = self.dropout_rng.random() < (
+                self.dropout_rate + self.dropout_correlation * (1 - self.dropout_rate)
+            )
+        else:
+            to_crash = self.dropout_rng.random() < self.dropout_rate
 
-    def get_neighbors(self, node=None):
-        logging.info("Requesting neighbors from the peer sampler.")
-        self.communication.send(
-            self.peer_sampler_uid,
-            {
-                "REQUEST_NEIGHBORS": self.uid,
-                "iteration": self.iteration,
-                "averaging_round": self.averaging_round,  # Problem: This increases the size of the data we must send when performing a single averaging round
-                "CHANNEL": "SERVER_REQUEST",
-            },
-        )
-        my_neighbors = self.receive_neighbors()
-        logging.info(
-            f"Neighbors for iteration {self.iteration} and round {self.averaging_round}: {my_neighbors}"
-        )
-        return my_neighbors
+        return not to_crash
 
     def __init__(
         self,
@@ -57,107 +52,41 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
         train_evaluate_after=1,
         reset_optimizer=1,
         peer_sampler_uid=-1,
+        dropout_rate=0.1,
+        dropout_correlation=0.1,
         should_run=True,
         *args,
     ):
-        """
-        Constructor
-
-        Parameters
-        ----------
-        rank : int
-            Rank of process local to the machine
-        machine_id : int
-            Machine ID on which the process in running
-        mapping : decentralizepy.mappings
-            The object containing the mapping rank <--> uid
-        graph : decentralizepy.graphs
-            The object containing the global graph
-        config : dict
-            A dictionary of configurations. Must contain the following:
-            [DATASET]
-                dataset_package
-                dataset_class
-                model_class
-            [OPTIMIZER_PARAMS]
-                optimizer_package
-                optimizer_class
-            [TRAIN_PARAMS]
-                training_package = decentralizepy.training.Training
-                training_class = Training
-                epochs_per_round = 25
-                batch_size = 64
-        iterations : int
-            Number of iterations (communication steps) for which the model should be trained
-        averaging_rounds : int
-            Number of averaging rounds in a communication step. Default to 1.
-        log_dir : str
-            Logging directory
-        weights_store_dir : str
-            Directory in which to store model weights
-        log_level : logging.Level
-            One of DEBUG, INFO, WARNING, ERROR, CRITICAL
-        test_after : int
-            Number of iterations after which the test loss and accuracy are calculated
-        train_evaluate_after : int
-            Number of iterations after which the train loss is calculated
-        reset_optimizer : int
-            1 if optimizer should be reset every communication round, else 0
-        args : optional
-            Other arguments
-
-        """
-        self.averaging_rounds = averaging_rounds
-
         super().__init__(
-            rank=rank,
-            machine_id=machine_id,
-            mapping=mapping,
-            graph=graph,
-            config=config,
-            iterations=iterations,
-            log_dir=log_dir,
-            weights_store_dir=weights_store_dir,
-            log_level=log_level,
-            test_after=test_after,
-            train_evaluate_after=train_evaluate_after,
-            reset_optimizer=reset_optimizer,
-            peer_sampler_uid=peer_sampler_uid,
+            rank,
+            machine_id,
+            mapping,
+            graph,
+            config,
+            iterations,
+            averaging_rounds,
+            log_dir,
+            weights_store_dir,
+            log_level,
+            test_after,
+            train_evaluate_after,
+            reset_optimizer,
+            peer_sampler_uid,
             should_run=False,
             *args,
         )
+        self.dropout_rng = random.Random()
+
+        self.dropout_rng.seed(self.dataset.random_seed * 125 + self.uid)
+        self.dropout_rate = dropout_rate
+        self.dropout_correlation = dropout_correlation
+        self.dropped_last_round = False
+
+        assert isinstance(self.sharing, SharingAsymmetric)
+        self.sharing: SharingAsymmetric
+
         if should_run:
             self.run()
-        # total_threads = os.cpu_count()
-        # self.threads_per_proc = max(
-        #     math.floor(total_threads / mapping.procs_per_machine), 1
-        # )
-        # torch.set_num_threads(self.threads_per_proc)
-        # torch.set_num_interop_threads(1)
-        # self.instantiate(
-        #     rank=rank,
-        #     machine_id=machine_id,
-        #     mapping=mapping,
-        #     graph=graph,
-        #     config=config,
-        #     iterations=iterations,
-        #     log_dir=log_dir,
-        #     weights_store_dir=weights_store_dir,
-        #     log_level=log_level,
-        #     test_after=test_after,
-        #     train_evaluate_after=train_evaluate_after,
-        #     reset_optimizer=reset_optimizer,
-        #     *args,
-        # )
-        # logging.info(f"RANK : {rank}, MACHINE ID : {machine_id}")
-
-        # self.message_queue["PEERS"] = deque()
-
-        # self.peer_sampler_uid = peer_sampler_uid
-        # self.connect_neighbor(self.peer_sampler_uid)
-        # self.wait_for_hello(self.peer_sampler_uid)
-
-        # self.run()
 
     @error_logging_wrapper
     def run(self):
@@ -178,8 +107,16 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
 
             self.iteration = iteration
             self.sharing.training_iteration = iteration
+            to_participate = self.participate()
 
-            self.trainer.train(self.dataset)
+            if to_participate:
+                self.trainer.train(self.dataset)
+            else:
+                logging.debug(
+                    "Node %s not participating at iteration %s.",
+                    self.uid,
+                    self.iteration,
+                )
 
             # The following code does not work because TCP sockets are supposed to be long lived.
             # for neighbor in self.my_neighbors:
@@ -202,9 +139,16 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
 
                 # self.instantiate_peer_deques()
 
-                self.sharing.send_all(
-                    self.my_neighbors, averaging_round=self.averaging_round
-                )
+                self.dropped_last_round = to_participate
+
+                if to_participate:
+                    self.sharing.send_all(
+                        self.my_neighbors, averaging_round=self.averaging_round
+                    )
+                else:
+                    self.sharing.send_dropped_out(
+                        self.my_neighbors, averaging_round=self.averaging_round
+                    )
 
                 while not self.received_from_all():
                     sender, data = self.receive_DPSGD()
@@ -212,11 +156,25 @@ class DPSGDWithPeerSamplerMultipleAvgRounds(DPSGDWithPeerSampler):
                         self.peer_deques[sender] = deque()
                     self.peer_deques[sender].append(data)
 
-                averaging_deque = dict()
-                for neighbor in self.my_neighbors:
-                    averaging_deque[neighbor] = self.peer_deques[neighbor]
+                # # Filter by removing data corresponding to dropped out nodes
+                # if "DROPPED_OUT" in data:
+                #     # Ignore messages from dropped out nodes.
+                #     logging.debug("Received DROPOUT signal from %s", sender)
+                #     continue
 
-                self.sharing._averaging(averaging_deque)
+                # Only participate if you are not dropped out.
+                if to_participate:
+                    logging.debug("Starting averaging")
+                    averaging_deque = dict()
+                    for neighbor in self.my_neighbors:
+                        averaging_deque[neighbor] = self.peer_deques[neighbor]
+
+                    self.sharing._averaging(averaging_deque)
+                else:
+                    # Dequeue current messages to skip current iteration.
+                    logging.debug("Dummy averaging, emptying queues")
+                    for neighbor in self.my_neighbors:
+                        _ = self.peer_deques[neighbor].popleft()
 
             if self.reset_optimizer:
                 self.optimizer = self.optimizer_class(

@@ -48,6 +48,7 @@ class DPSGDWithPeerSampler(DPSGDNode):
         train_evaluate_after=1,
         reset_optimizer=1,
         peer_sampler_uid=-1,
+        should_run=True,
         *args
     ):
         """
@@ -126,8 +127,8 @@ class DPSGDWithPeerSampler(DPSGDNode):
         self.peer_sampler_uid = peer_sampler_uid
         self.connect_neighbor(self.peer_sampler_uid)
         self.wait_for_hello(self.peer_sampler_uid)
-
-        self.run()
+        if should_run:
+            self.run()
 
     def disconnect_neighbors(self):
         """

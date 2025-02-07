@@ -32,6 +32,18 @@ class SharingAsymmetric(Sharing):
                 # We save one of the sent model
                 self.check_and_save_sent_model(to_send["params"], neighbor)
 
+    def send_dropped_out(self, neighbors, averaging_round=0):
+        logging.debug(f"Sending dummy data")
+        to_send = self.get_data_to_send()
+        to_send["CHANNEL"] = "DPSGD"
+        to_send["averaging_round"] = averaging_round
+
+        del to_send["params"]  # Remove the model from the message
+        to_send["DROPPED_OUT"] = True
+
+        for i, neighbor in enumerate(neighbors):
+            self.communication.send(neighbor, to_send)
+
     def check_and_save_sent_model(self, model_weights, target):
         """Makes necessary checks to save sent model for future attacks.
 
@@ -69,8 +81,19 @@ class SharingAsymmetric(Sharing):
         with torch.no_grad():
             total = dict()
             weight_total = 0
-            for i, n in enumerate(peer_deques):
+            to_average = {}
+            for n in peer_deques:
+                # Note: in a dynamic topology, peer_deques must be filtered to remove non-neighbors at the current iteration.
+                # Otherwise, we may pop peer_deques from members that are not my neighbors for this iteration.
+                # TODO: This is usually done in the Node class, maybe delagate this process to here for clarity.
                 data = peer_deques[n].popleft()
+                if "DROPPED_OUT" not in data:
+                    to_average[n] = data
+                else:
+                    logging.debug("Filtering out message from %s.", n)
+
+            for i, n in enumerate(to_average):
+                data = to_average[n]
                 degree, iteration, averaging_round = (
                     data["degree"],
                     data["iteration"],
@@ -87,7 +110,7 @@ class SharingAsymmetric(Sharing):
                 # Metro-Hastings
                 # TODO: Generalize this to arbitrary communication matrix?
                 # In this case it should be handled by the PeerSampler.
-                weight = 1 / (max(len(peer_deques), degree) + 1)
+                weight = 1 / (max(len(to_average), degree) + 1)
                 weight_total += weight
                 for key, value in data.items():
                     if key in total:
@@ -95,8 +118,11 @@ class SharingAsymmetric(Sharing):
                     else:
                         total[key] = value * weight
 
-            for key, value in self.model.state_dict().items():
-                total[key] += (1 - weight_total) * value  # Metro-Hastings
+            if len(to_average) == 0:
+                total = {key: value for key, value in self.model.state_dict().items()}
+            else:
+                for key, value in self.model.state_dict().items():
+                    total[key] += (1 - weight_total) * value  # Metro-Hastings
 
         self.model.load_state_dict(total)
         self._post_step()
