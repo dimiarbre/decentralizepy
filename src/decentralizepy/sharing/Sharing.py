@@ -109,9 +109,9 @@ class Sharing:
         with torch.no_grad():
             for name, v in self.model.state_dict().items():
                 t = v.flatten()
-                logging.debug(  # TODO: remove this debug?
-                    "dtype of layer %s : %s - %s parameters.", name, t.dtype, len(t)
-                )
+                # logging.debug(  # TODO: remove this debug?
+                #     "dtype of layer %s : %s - %s parameters.", name, t.dtype, len(t)
+                # )
                 to_cat.append(t)
         flat = torch.cat(to_cat)
         data = dict()

@@ -52,8 +52,6 @@ class DPSGDWithPeerSamplerMultipleAvgRoundsDropout(
         train_evaluate_after=1,
         reset_optimizer=1,
         peer_sampler_uid=-1,
-        dropout_rate=0.1,
-        dropout_correlation=0.1,
         should_run=True,
         *args,
     ):
@@ -78,10 +76,26 @@ class DPSGDWithPeerSamplerMultipleAvgRoundsDropout(
         self.dropout_rng = random.Random()
 
         self.dropout_rng.seed(self.dataset.random_seed * 125 + self.uid)
-        self.dropout_rate = dropout_rate
-        self.dropout_correlation = dropout_correlation
+
+        if "dropout_rate" in config["NODE"]:
+            self.dropout_rate = float(config["NODE"]["dropout_rate"])
+        else:
+            logging.warning(
+                "Missing 'dropout_rate' in NODE from configuration, defaulting to 0.1"
+            )
+        if "dropout_correlation" in config["NODE"]:
+            self.dropout_correlation = float(config["NODE"]["dropout_correlation"])
+        else:
+            logging.warning(
+                "Missing 'dropout_correlation' in NODE from configuration, defaulting to 0.1"
+            )
         self.dropped_last_round = False
 
+        logging.info("Dropout rate: %s", self.dropout_rate)
+        logging.info("Dropout correlation: %s", self.dropout_correlation)
+
+        # TODO: Extend this class's behavior to Sharing?
+        # We need send_all basically, but this could all be moved to Sharing.
         assert isinstance(self.sharing, SharingAsymmetric)
         self.sharing: SharingAsymmetric
 
@@ -110,9 +124,10 @@ class DPSGDWithPeerSamplerMultipleAvgRoundsDropout(
             to_participate = self.participate()
 
             if to_participate:
+                logging.info("GD step")
                 self.trainer.train(self.dataset)
             else:
-                logging.debug(
+                logging.info(
                     "Node %s not participating at iteration %s.",
                     self.uid,
                     self.iteration,
@@ -146,6 +161,7 @@ class DPSGDWithPeerSamplerMultipleAvgRoundsDropout(
                         self.my_neighbors, averaging_round=self.averaging_round
                     )
                 else:
+                    logging.info("Dropping out of iteration %s.", self.iteration)
                     self.sharing.send_dropped_out(
                         self.my_neighbors, averaging_round=self.averaging_round
                     )

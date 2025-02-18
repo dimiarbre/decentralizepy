@@ -119,6 +119,9 @@ class SharingAsymmetric(Sharing):
                         total[key] = value * weight
 
             if len(to_average) == 0:
+                logging.info(
+                    "Got no models in the current iteration! Keeping local model."
+                )
                 total = {key: value for key, value in self.model.state_dict().items()}
             else:
                 for key, value in self.model.state_dict().items():
