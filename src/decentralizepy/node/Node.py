@@ -9,8 +9,10 @@ import numpy as np
 import torch
 
 from decentralizepy import utils
+from decentralizepy.datasets.Dataset import Dataset
 from decentralizepy.graphs.Graph import Graph
 from decentralizepy.mappings.Mapping import Mapping
+from decentralizepy.sharing.Sharing import Sharing
 
 
 class Node:
@@ -213,7 +215,7 @@ class Node:
             dataset_configs,
             ["dataset_package", "dataset_class", "model_class"],
         )
-        self.dataset = self.dataset_class(
+        self.dataset: Dataset = self.dataset_class(
             self.rank, self.machine_id, self.mapping, **self.dataset_params
         )
 
@@ -337,7 +339,7 @@ class Node:
         sharing_params = utils.remove_keys(
             sharing_configs, ["sharing_package", "sharing_class"]
         )
-        self.sharing = sharing_class(
+        self.sharing: Sharing = sharing_class(
             self.rank,
             self.machine_id,
             self.communication,
